@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
       jobDescriptionId,
       analysisResultId,
       jobDescription,
-      profileData,
     } = body;
 
     // Create CV record
@@ -25,13 +24,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Trigger Trigger.dev task
+    // Trigger Trigger.dev task (profile data will be fetched in the task)
     await triggerClient.triggerCVGeneration({
       userId: user.id,
       jobDescriptionId,
       analysisResultId,
       jobDescription,
-      profileData,
       cvId: cv.id,
     });
 

@@ -1,5 +1,7 @@
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
+import { JobRequirementsSchema, type JobRequirements } from "../../types";
+import { extractJobRequirementsWithLLM } from "../../utils/llm-helpers";
 
 export const extractJobRequirements = createTool({
   id: "extract-job-requirements",
@@ -7,23 +9,10 @@ export const extractJobRequirements = createTool({
   inputSchema: z.object({
     jobDescription: z.string(),
   }),
-  outputSchema: z.object({
-    requiredSkills: z.array(z.string()),
-    preferredSkills: z.array(z.string()),
-    qualifications: z.array(z.string()),
-    experienceLevel: z.string(),
-    keyResponsibilities: z.array(z.string()),
-  }),
-  execute: async ({ context }) => {
-    // This tool will be enhanced with LLM-based extraction
-    // For now, return empty structure
-    return {
-      requiredSkills: [],
-      preferredSkills: [],
-      qualifications: [],
-      experienceLevel: "",
-      keyResponsibilities: [],
-    };
+  outputSchema: JobRequirementsSchema,
+  execute: async ({ context }: { context: { jobDescription: string } }): Promise<JobRequirements> => {
+    // Use LLM-based extraction for accurate requirement extraction
+    return await extractJobRequirementsWithLLM(context.jobDescription);
   },
 });
 

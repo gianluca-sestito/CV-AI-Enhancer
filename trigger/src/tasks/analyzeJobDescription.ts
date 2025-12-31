@@ -2,6 +2,7 @@ import { task } from "@trigger.dev/sdk";
 import { z } from "zod";
 import { mastra } from "../lib/mastra";
 import { prisma } from "../lib/prisma/client";
+import { fetchProfileData } from "../lib/utils/profile";
 
 export const analyzeJobDescription = task({
   id: "analyze-job-description",
@@ -9,16 +10,9 @@ export const analyzeJobDescription = task({
     userId: string;
     jobDescriptionId: string;
     jobDescription: string;
-    profileData: {
-      personalSummary: string | null;
-      workExperiences: any[];
-      skills: any[];
-      education: any[];
-      languages: any[];
-    };
     analysisResultId: string;
   }, { ctx }: any) => {
-    // 1. Create analysis record
+    // 1. Verify analysis record exists
     const analysisRecord = await prisma.analysisResult.findUnique({
       where: { id: payload.analysisResultId },
     });
@@ -28,17 +22,31 @@ export const analyzeJobDescription = task({
     }
 
     try {
-      // 2. Get Mastra workflow
+      // 2. Fetch profile data from database
+      const profileData = await fetchProfileData(payload.userId);
+
+      // 3. Get Mastra workflow
       const workflow = mastra.getWorkflow("analysisWorkflow");
       
-      // 3. Execute workflow (handles all steps: validation, extraction, analysis, storage)
+      // 4. Execute workflow (handles all steps: validation, extraction, analysis, storage)
       const run = await workflow.createRunAsync();
+      const workflowRunId = (run as any).id || (run as any).runId || String(Date.now());
+      
+      // Store workflow run ID for traceability
+      await prisma.analysisResult.update({
+        where: { id: payload.analysisResultId },
+        data: {
+          workflowRunId,
+          status: "processing",
+        },
+      });
+
       const result = await run.start({
         inputData: {
           userId: payload.userId,
           jobDescriptionId: payload.jobDescriptionId,
           jobDescription: payload.jobDescription,
-          profileData: payload.profileData,
+          profileData,
           analysisResultId: payload.analysisResultId,
         },
       });
@@ -52,11 +60,14 @@ export const analyzeJobDescription = task({
         suggestedFocusAreas: (result as any).outputData?.suggestedFocusAreas || [],
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      
       await prisma.analysisResult.update({
         where: { id: analysisRecord.id },
         data: {
           status: "failed",
-          errorMessage: error instanceof Error ? error.message : String(error),
+          errorMessage: `${errorMessage}${errorStack ? `\nStack: ${errorStack}` : ""}`,
         },
       });
       throw error;

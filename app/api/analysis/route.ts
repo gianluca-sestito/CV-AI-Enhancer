@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth();
     const body = await request.json();
-    const { jobDescriptionId, jobDescription, profileData } = body;
+    const { jobDescriptionId, jobDescription } = body;
 
     // Create analysis record
     const analysis = await prisma.analysisResult.create({
@@ -23,12 +23,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Trigger Trigger.dev task
+    // Trigger Trigger.dev task (profile data will be fetched in the task)
     await triggerClient.triggerAnalysis({
       userId: user.id,
       jobDescriptionId,
       jobDescription,
-      profileData,
       analysisResultId: analysis.id,
     });
 

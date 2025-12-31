@@ -1,29 +1,22 @@
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
+import { ProfileDataSchema, CVValidationSchema, type ProfileData, type CVValidation } from "../../types";
 
 export const validateCVContent = createTool({
   id: "validate-cv-content",
   description: "Validates that CV content only contains information from the profile",
   inputSchema: z.object({
     cvContent: z.string(),
-    profileData: z.object({
-      workExperiences: z.array(z.any()),
-      skills: z.array(z.any()),
-      education: z.array(z.any()),
-    }),
+    profileData: ProfileDataSchema,
   }),
-  outputSchema: z.object({
-    isValid: z.boolean(),
-    violations: z.array(z.string()),
-    warnings: z.array(z.string()),
-  }),
-  execute: async ({ context }: any) => {
+  outputSchema: CVValidationSchema,
+  execute: async ({ context }: { context: { cvContent: string; profileData: ProfileData } }): Promise<CVValidation> => {
     const { cvContent, profileData } = context;
     const violations: string[] = [];
     const warnings: string[] = [];
 
     // Check for invented companies
-    const profileCompanies = profileData.workExperiences.map((exp: any) =>
+    const profileCompanies = profileData.workExperiences.map((exp) =>
       exp.company.toLowerCase()
     );
     const cvLower = cvContent.toLowerCase();
@@ -32,7 +25,7 @@ export const validateCVContent = createTool({
     // This is a basic implementation - can be enhanced with NLP
     
     // Check for invented skills
-    const profileSkills = profileData.skills.map((skill: any) =>
+    const profileSkills = profileData.skills.map((skill) =>
       skill.name.toLowerCase()
     );
     

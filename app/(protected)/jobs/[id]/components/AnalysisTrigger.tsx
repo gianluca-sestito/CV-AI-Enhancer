@@ -50,23 +50,6 @@ export default function AnalysisTrigger({
         body: JSON.stringify({
           jobDescriptionId: job.id,
           jobDescription: job.description,
-          profileData: {
-            firstName: profile.firstName,
-            lastName: profile.lastName,
-            email: profile.email,
-            phone: profile.phone,
-            location: profile.location,
-            address: profile.address,
-            city: profile.city,
-            country: profile.country,
-            postalCode: profile.postalCode,
-            profileImageUrl: profile.profileImageUrl,
-            personalSummary: profile.personalSummary,
-            workExperiences: profile.workExperiences,
-            skills: profile.skills,
-            education: profile.education,
-            languages: profile.languages,
-          },
         }),
       });
 

@@ -1,24 +1,15 @@
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
+import { ProfileDataSchema, ProfileValidationSchema, type ProfileData, type ProfileValidation } from "../../types";
 
 export const validateProfileData = createTool({
   id: "validate-profile-data",
   description: "Validates that profile data is complete and structured correctly",
   inputSchema: z.object({
-    profileData: z.object({
-      personalSummary: z.string().nullable(),
-      workExperiences: z.array(z.any()),
-      skills: z.array(z.any()),
-      education: z.array(z.any()),
-      languages: z.array(z.any()),
-    }),
+    profileData: ProfileDataSchema,
   }),
-  outputSchema: z.object({
-    isValid: z.boolean(),
-    missingFields: z.array(z.string()),
-    warnings: z.array(z.string()),
-  }),
-  execute: async ({ context }: any) => {
+  outputSchema: ProfileValidationSchema,
+  execute: async ({ context }: { context: { profileData: ProfileData } }): Promise<ProfileValidation> => {
     const { profileData } = context;
     const missingFields: string[] = [];
     const warnings: string[] = [];
