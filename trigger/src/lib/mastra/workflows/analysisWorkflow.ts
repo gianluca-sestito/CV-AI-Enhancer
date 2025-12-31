@@ -31,19 +31,23 @@ type WorkflowInput = z.infer<typeof WorkflowInputSchema>;
 const validateInputStep = createStep({
   id: "validate-input",
   inputSchema: WorkflowInputSchema,
-  outputSchema: ProfileValidationSchema,
-  execute: async (params: any): Promise<ProfileValidation> => {
+  outputSchema: ProfileValidationSchema.merge(WorkflowInputSchema),
+  execute: async (params: any) => {
     try {
-      const { profileData } = params.inputData;
+      const inputData = params.inputData;
+      const { profileData } = inputData;
       
       const validation = await validateProfileData.execute({
         context: { profileData },
       } as any);
 
       return {
+        // Validation result
         isValid: validation?.isValid ?? false,
         missingFields: validation?.missingFields ?? [],
         warnings: validation?.warnings ?? [],
+        // Pass through original input
+        ...inputData,
       };
     } catch (error) {
       throw new Error(`Profile validation failed: ${createErrorMessage(error, "validate-input")}`);
@@ -54,13 +58,14 @@ const validateInputStep = createStep({
 // Step 2: Extract job requirements
 const extractRequirementsStep = createStep({
   id: "extract-requirements",
-  inputSchema: WorkflowInputSchema,
+  inputSchema: ProfileValidationSchema.merge(WorkflowInputSchema),
   outputSchema: z.object({
     requirements: JobRequirementsSchema,
-  }),
-  execute: async (params: any): Promise<{ requirements: JobRequirements }> => {
+  }).merge(WorkflowInputSchema),
+  execute: async (params: any) => {
     try {
-      const { jobDescription } = params.inputData;
+      const inputData = params.inputData;
+      const { jobDescription } = inputData;
       
       const requirements = await extractJobRequirements.execute({
         context: { jobDescription },
@@ -68,6 +73,8 @@ const extractRequirementsStep = createStep({
 
       return {
         requirements: requirements as JobRequirements,
+        // Pass through original input
+        ...inputData,
       };
     } catch (error) {
       throw new Error(`Job requirements extraction failed: ${createErrorMessage(error, "extract-requirements")}`);
@@ -78,12 +85,18 @@ const extractRequirementsStep = createStep({
 // Step 3: Perform analysis
 const performAnalysisStep = createStep({
   id: "perform-analysis",
-  inputSchema: WorkflowInputSchema,
-  outputSchema: AnalysisOutputSchema,
-  execute: async (params: any): Promise<AnalysisOutput> => {
+  inputSchema: z.object({
+    requirements: JobRequirementsSchema,
+  }).merge(WorkflowInputSchema),
+  outputSchema: AnalysisOutputSchema.merge(WorkflowInputSchema.pick({ analysisResultId: true })),
+  execute: async (params: any) => {
     try {
-      const { profileData, jobDescription } = params.inputData;
-      const { requirements } = params.stepResults["extract-requirements"];
+      const inputData = params.inputData;
+      const { profileData, jobDescription, requirements, analysisResultId } = inputData;
+      
+      if (!requirements) {
+        throw new Error("Requirements not found from extract-requirements step");
+      }
       
       const result = await analysisAgent.generate(
         `Analyze this profile against the job requirements. 
@@ -108,6 +121,8 @@ const performAnalysisStep = createStep({
         gaps: analysis.gaps ?? [],
         missingSkills: analysis.missingSkills ?? [],
         suggestedFocusAreas: analysis.suggestedFocusAreas ?? [],
+        // Pass through analysisResultId for next step
+        analysisResultId,
       };
     } catch (error) {
       throw new Error(`Analysis failed: ${createErrorMessage(error, "perform-analysis")}`);
@@ -118,14 +133,18 @@ const performAnalysisStep = createStep({
 // Step 4: Store results
 const storeResultsStep = createStep({
   id: "store-results",
-  inputSchema: WorkflowInputSchema,
+  inputSchema: AnalysisOutputSchema.merge(WorkflowInputSchema.pick({ analysisResultId: true })),
   outputSchema: z.object({
     success: z.boolean(),
   }),
   execute: async (params: any): Promise<{ success: boolean }> => {
     try {
-      const { analysisResultId } = params.inputData;
-      const analysis = params.stepResults["perform-analysis"];
+      const inputData = params.inputData;
+      const { analysisResultId, ...analysis } = inputData;
+      
+      if (!analysisResultId) {
+        throw new Error("analysisResultId not found");
+      }
       
       await prisma.analysisResult.update({
         where: { id: analysisResultId },

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus } from "lucide-react";
+import JobCard from "./components/JobCard";
 
 export default async function JobsPage() {
   const user = await requireAuth();
@@ -50,37 +51,10 @@ export default async function JobsPage() {
       ) : (
         <div className="grid gap-4">
           {jobs.map((job: typeof jobs[0]) => (
-            <Card key={job.id}>
-              <CardHeader>
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                  <div className="flex-1">
-                    <CardTitle>{job.title}</CardTitle>
-                    {job.company && (
-                      <CardDescription>{job.company}</CardDescription>
-                    )}
-                  </div>
-                  <Link href={`/jobs/${job.id}`} className="w-full sm:w-auto">
-                    <Button variant="outline" className="w-full sm:w-auto">View</Button>
-                  </Link>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {job.description}
-                </p>
-                {job.analysisResults.length > 0 && (
-                  <div className="mt-4">
-                    <span className="text-sm font-medium">
-                      Latest Analysis: {job.analysisResults[0].matchScore}% match
-                    </span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <JobCard key={job.id} job={job} />
           ))}
         </div>
       )}
     </div>
   );
 }
-

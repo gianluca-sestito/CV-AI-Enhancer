@@ -30,14 +30,14 @@ ${jobDescription}
 Return only the JSON object, no markdown formatting or additional text.`;
 
   try {
-    const result = await analysisAgent.generate(prompt);
-    const jsonText = result.text.trim();
+    const agentResult = await analysisAgent.generate(prompt);
+    const jsonText = agentResult.text.trim();
     // Remove markdown code blocks if present
     const cleanedText = jsonText.replace(/^```json\s*|\s*```$/g, "").replace(/^```\s*|\s*```$/g, "").trim();
     const parsed = JSON.parse(cleanedText) as JobRequirements;
     
     // Validate and ensure all fields exist
-    const result = {
+    const jobRequirements = {
       requiredSkills: parsed.requiredSkills || [],
       preferredSkills: parsed.preferredSkills || [],
       qualifications: parsed.qualifications || [],
@@ -46,8 +46,8 @@ Return only the JSON object, no markdown formatting or additional text.`;
     };
     
     // Cache the result
-    jobRequirementsCache.set(cacheKey, result);
-    return result;
+    jobRequirementsCache.set(cacheKey, jobRequirements);
+    return jobRequirements;
   } catch (error) {
     console.error("Error extracting job requirements with LLM:", error);
     // Fallback to empty structure
@@ -109,21 +109,21 @@ Return ONLY valid JSON with this exact structure:
 Include only IDs/names that are genuinely relevant to the job. Return only the JSON object, no markdown formatting.`;
 
   try {
-    const result = await cvGenerationAgent.generate(prompt);
-    const jsonText = result.text.trim();
+    const agentResult = await cvGenerationAgent.generate(prompt);
+    const jsonText = agentResult.text.trim();
     // Remove markdown code blocks if present
     const cleanedText = jsonText.replace(/^```json\s*|\s*```$/g, "").replace(/^```\s*|\s*```$/g, "").trim();
     const parsed = JSON.parse(cleanedText) as RelevantExperience;
     
-    const result = {
+    const relevantExperience = {
       relevantExperiences: parsed.relevantExperiences || [],
       relevantSkills: parsed.relevantSkills || [],
       relevantEducation: parsed.relevantEducation || [],
     };
     
     // Cache the result
-    relevantExperienceCache.set(cacheKey, result);
-    return result;
+    relevantExperienceCache.set(cacheKey, relevantExperience);
+    return relevantExperience;
   } catch (error) {
     console.error("Error extracting relevant experience with LLM:", error);
     // Fallback to empty structure
