@@ -69,7 +69,10 @@ export default function PersonalInfoForm({ profile }: { profile: Profile }) {
         body: formData,
       });
 
-      if (!response.ok) throw new Error("Failed to upload image");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || errorData.details || "Failed to upload image");
+      }
 
       const data = await response.json();
       setProfileImageUrl(data.url);
@@ -77,7 +80,8 @@ export default function PersonalInfoForm({ profile }: { profile: Profile }) {
       router.refresh();
     } catch (error) {
       console.error("Error uploading image:", error);
-      alert("Failed to upload image");
+      const errorMessage = error instanceof Error ? error.message : "Failed to upload image";
+      alert(`Failed to upload image: ${errorMessage}\n\nPlease check the Storage Setup guide in docs/STORAGE_SETUP.md`);
     } finally {
       setUploadingImage(false);
     }
