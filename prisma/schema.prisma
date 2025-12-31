@@ -1,0 +1,165 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // Supabase PostgreSQL connection string
+}
+
+model Profile {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @map("user_id") @db.Uuid
+  firstName       String?  @map("first_name") @db.Text
+  lastName        String?  @map("last_name") @db.Text
+  email           String?  @db.Text
+  phone           String?  @db.Text
+  location        String?  @db.Text
+  address         String?  @db.Text
+  city            String?  @db.Text
+  country         String?  @db.Text
+  postalCode      String?  @map("postal_code") @db.Text
+  profileImageUrl String?  @map("profile_image_url") @db.Text
+  personalSummary String?  @map("personal_summary") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workExperiences WorkExperience[]
+  skills          Skill[]
+  education       Education[]
+  languages       Language[]
+
+  @@map("profiles")
+}
+
+model WorkExperience {
+  id          String   @id @default(uuid()) @db.Uuid
+  profileId   String   @map("profile_id") @db.Uuid
+  company     String   @db.Text
+  position    String   @db.Text
+  startDate   DateTime @map("start_date") @db.Date
+  endDate     DateTime? @map("end_date") @db.Date
+  current     Boolean  @default(false)
+  description String   @db.Text
+  orderIndex  Int      @map("order_index")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("work_experiences")
+}
+
+model Skill {
+  id              String   @id @default(uuid()) @db.Uuid
+  profileId       String   @map("profile_id") @db.Uuid
+  name            String   @db.Text
+  category        String?  @db.Text
+  proficiencyLevel String? @map("proficiency_level") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("skills")
+}
+
+model Education {
+  id          String   @id @default(uuid()) @db.Uuid
+  profileId   String   @map("profile_id") @db.Uuid
+  institution String   @db.Text
+  degree      String   @db.Text
+  fieldOfStudy String? @map("field_of_study") @db.Text
+  startDate   DateTime @map("start_date") @db.Date
+  endDate     DateTime? @map("end_date") @db.Date
+  current     Boolean  @default(false)
+  description String?  @db.Text
+  orderIndex  Int      @map("order_index")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("education")
+}
+
+model Language {
+  id              String   @id @default(uuid()) @db.Uuid
+  profileId       String   @map("profile_id") @db.Uuid
+  name            String   @db.Text
+  proficiencyLevel String  @map("proficiency_level") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("languages")
+}
+
+model JobDescription {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  title       String   @db.Text
+  company     String?  @db.Text
+  description String   @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  analysisResults AnalysisResult[]
+  generatedCVs    GeneratedCV[]
+
+  @@index([userId])
+  @@map("job_descriptions")
+}
+
+model AnalysisResult {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @map("user_id") @db.Uuid
+  jobDescriptionId    String   @map("job_description_id") @db.Uuid
+  matchScore         Int      @map("match_score")
+  strengths          Json     // Array of { title: string, description: string }
+  gaps               Json     // Array of { title: string, description: string, severity: string }
+  missingSkills      Json     @map("missing_skills") // Array of strings
+  suggestedFocusAreas Json    @map("suggested_focus_areas") // Array of strings
+  rawAnalysis        Json?    @map("raw_analysis")
+  workflowRunId      String?  @map("workflow_run_id") @db.Text
+  status             String   @db.Text // "pending", "processing", "completed", "failed"
+  errorMessage       String?  @map("error_message") @db.Text
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  completedAt        DateTime? @map("completed_at") @db.Timestamptz(6)
+
+  jobDescription JobDescription @relation(fields: [jobDescriptionId], references: [id], onDelete: Cascade)
+  generatedCVs   GeneratedCV[]
+
+  @@index([userId])
+  @@index([jobDescriptionId])
+  @@map("analysis_results")
+}
+
+model GeneratedCV {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  jobDescriptionId  String   @map("job_description_id") @db.Uuid
+  analysisResultId String?  @map("analysis_result_id") @db.Uuid
+  markdownContent   String   @map("markdown_content") @db.Text
+  workflowRunId     String?  @map("workflow_run_id") @db.Text
+  status            String   @db.Text // "pending", "processing", "completed", "failed"
+  errorMessage      String?  @map("error_message") @db.Text
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  completedAt       DateTime? @map("completed_at") @db.Timestamptz(6)
+
+  jobDescription JobDescription @relation(fields: [jobDescriptionId], references: [id], onDelete: Cascade)
+  analysisResult AnalysisResult? @relation(fields: [analysisResultId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([jobDescriptionId])
+  @@map("generated_cvs")
+}
+
