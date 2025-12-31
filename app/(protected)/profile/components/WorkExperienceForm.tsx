@@ -27,7 +27,15 @@ export default function WorkExperienceForm({
   profileId: string;
   experiences: WorkExperience[];
 }) {
-  const [items, setItems] = useState<WorkExperience[]>(experiences);
+  // Normalize dates to strings and ensure current is boolean
+  const normalizedExperiences = experiences.map((exp) => ({
+    ...exp,
+    startDate: exp.startDate ? (typeof exp.startDate === 'string' ? exp.startDate : new Date(exp.startDate).toISOString().split('T')[0]) : '',
+    endDate: exp.endDate ? (typeof exp.endDate === 'string' ? exp.endDate : new Date(exp.endDate).toISOString().split('T')[0]) : null,
+    current: Boolean(exp.current),
+  }));
+  
+  const [items, setItems] = useState<WorkExperience[]>(normalizedExperiences);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -52,8 +60,8 @@ export default function WorkExperienceForm({
   };
 
   const updateExperience = (id: string, field: keyof WorkExperience, value: any) => {
-    setItems(
-      items.map((item) =>
+    setItems((prevItems) =>
+      prevItems.map((item) =>
         item.id === id ? { ...item, [field]: value } : item
       )
     );
@@ -162,16 +170,26 @@ export default function WorkExperienceForm({
                       <input
                         type="checkbox"
                         id={`current-${exp.id}`}
-                        checked={exp.current}
+                        checked={Boolean(exp.current)}
                         onChange={(e) => {
-                          updateExperience(exp.id, "current", e.target.checked);
-                          if (e.target.checked) {
-                            updateExperience(exp.id, "endDate", null);
-                          }
+                          e.stopPropagation();
+                          const isChecked = e.target.checked;
+                          setItems((prevItems) =>
+                            prevItems.map((item) => {
+                              if (item.id === exp.id) {
+                                return {
+                                  ...item,
+                                  current: isChecked,
+                                  endDate: isChecked ? null : item.endDate,
+                                };
+                              }
+                              return item;
+                            })
+                          );
                         }}
-                        className="rounded"
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
                       />
-                      <Label htmlFor={`current-${exp.id}`} className="text-sm">
+                      <Label htmlFor={`current-${exp.id}`} className="text-sm cursor-pointer">
                         Current
                       </Label>
                     </div>
