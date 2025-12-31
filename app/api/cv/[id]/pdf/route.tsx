@@ -57,7 +57,7 @@ export async function GET(
     }
 
     // Simple PDF generation - can be enhanced
-    const PDFDocument = () => (
+    const PDFDocument = (
       <Document>
         <Page size="A4" style={styles.page}>
           <View style={styles.section}>
@@ -68,14 +68,12 @@ export async function GET(
       </Document>
     );
 
-    const stream = await renderToStream(<PDFDocument />);
+    const stream = await renderToStream(PDFDocument);
     const chunks: Buffer[] = [];
     
     for await (const chunk of stream) {
       if (typeof chunk === 'string') {
-        chunks.push(Buffer.from(chunk, 'utf8'));
-      } else if (Buffer.isBuffer(chunk)) {
-        chunks.push(chunk);
+        chunks.push(Buffer.from(chunk, 'utf-8'));
       } else {
         chunks.push(Buffer.from(chunk));
       }
