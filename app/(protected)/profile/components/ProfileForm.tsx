@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PersonalInfoForm from "./PersonalInfoForm";
-import PersonalSummaryForm from "./PersonalSummaryForm";
 import WorkExperienceForm from "./WorkExperienceForm";
 import SkillsForm from "./SkillsForm";
 import EducationForm from "./EducationForm";
@@ -39,7 +38,6 @@ export default function ProfileForm({ profile }: { profile: Profile }) {
       <div className="overflow-x-auto">
         <TabsList className="w-full min-w-max md:w-auto">
           <TabsTrigger value="personal">Personal Info</TabsTrigger>
-          <TabsTrigger value="summary">Summary</TabsTrigger>
           <TabsTrigger value="experience">Experience</TabsTrigger>
           <TabsTrigger value="skills">Skills</TabsTrigger>
           <TabsTrigger value="education">Education</TabsTrigger>
@@ -49,10 +47,6 @@ export default function ProfileForm({ profile }: { profile: Profile }) {
 
       <TabsContent value="personal">
         <PersonalInfoForm profile={profile} />
-      </TabsContent>
-
-      <TabsContent value="summary">
-        <PersonalSummaryForm profile={profile} />
       </TabsContent>
 
       <TabsContent value="experience">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BarChart3, Sparkles } from "lucide-react";
 
 interface JobDescription {
   id: string;
@@ -58,25 +59,34 @@ export default function AnalysisTrigger({
       router.refresh();
     } catch (error) {
       console.error("Error starting analysis:", error);
+      alert("Failed to start analysis. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card>
+    <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
       <CardHeader>
-        <CardTitle>Analysis</CardTitle>
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <BarChart3 className="h-5 w-5" />
+          Analysis
+        </CardTitle>
         <CardDescription>
-          Analyze your profile against this job description
+          Analyze your profile against this job description to see how well you match
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Button onClick={handleAnalyze} disabled={loading} className="w-full sm:w-auto">
+        <Button 
+          onClick={handleAnalyze} 
+          disabled={loading} 
+          className="w-full sm:w-auto"
+          size="lg"
+        >
+          <Sparkles className="h-4 w-4 mr-2" />
           {loading ? "Starting Analysis..." : "Analyze Job Description"}
         </Button>
       </CardContent>
     </Card>
   );
 }
-

@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { FileText, Calendar, Sparkles, ExternalLink } from "lucide-react";
 
 interface JobDescription {
   id: string;
@@ -35,14 +37,23 @@ interface Profile {
   languages: any[];
 }
 
+interface GeneratedCV {
+  id: string;
+  status: string;
+  createdAt: Date;
+  completedAt: Date | null;
+}
+
 export default function CVGenerator({
   job,
   analysis,
   profile,
+  existingCVs = [],
 }: {
   job: JobDescription;
   analysis: AnalysisResult;
   profile: Profile;
+  existingCVs?: GeneratedCV[];
 }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -67,25 +78,109 @@ export default function CVGenerator({
       router.push(`/cv/${data.id}`);
     } catch (error) {
       console.error("Error generating CV:", error);
+      alert("Failed to generate CV. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "completed":
+        return <Badge variant="default" className="text-xs">Completed</Badge>;
+      case "processing":
+        return <Badge variant="secondary" className="text-xs">Processing</Badge>;
+      case "failed":
+        return <Badge variant="destructive" className="text-xs">Failed</Badge>;
+      default:
+        return <Badge variant="outline" className="text-xs">{status}</Badge>;
+    }
+  };
+
+  const formatDate = (date: Date | null) => {
+    if (!date) return "N/A";
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
   return (
-    <Card>
+    <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
       <CardHeader>
-        <CardTitle>CV Generation</CardTitle>
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          CV Generation
+        </CardTitle>
         <CardDescription>
           Generate a tailored CV based on this job description
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Button onClick={handleGenerate} disabled={loading} className="w-full sm:w-auto">
-          {loading ? "Generating CV..." : "Generate Tailored CV"}
+      <CardContent className="space-y-6">
+        {existingCVs.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Existing CVs
+            </h3>
+            <div className="space-y-3">
+              {existingCVs.map((cv) => (
+                <div
+                  key={cv.id}
+                  className="flex items-center justify-between p-4 border border-border/50 rounded-lg hover:bg-accent/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        {getStatusBadge(cv.status)}
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {formatDate(cv.createdAt)}
+                        </span>
+                      </div>
+                      {cv.status === "completed" && cv.completedAt && (
+                        <p className="text-xs text-muted-foreground">
+                          Completed {formatDate(cv.completedAt)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {cv.status === "completed" && (
+                    <Link href={`/cv/${cv.id}`}>
+                      <Button variant="outline" size="sm" className="shrink-0">
+                        <ExternalLink className="h-3 w-3 mr-1.5" />
+                        View
+                      </Button>
+                    </Link>
+                  )}
+                  {cv.status === "processing" && (
+                    <Button variant="outline" size="sm" disabled className="shrink-0">
+                      Processing...
+                    </Button>
+                  )}
+                  {cv.status === "failed" && (
+                    <Link href={`/cv/${cv.id}`}>
+                      <Button variant="outline" size="sm" className="shrink-0">
+                        Details
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <Button
+          onClick={handleGenerate}
+          disabled={loading}
+          className="w-full sm:w-auto"
+          size="lg"
+        >
+          <Sparkles className="h-4 w-4 mr-2" />
+          {loading ? "Generating CV..." : "Generate New CV"}
         </Button>
       </CardContent>
     </Card>
   );
 }
-

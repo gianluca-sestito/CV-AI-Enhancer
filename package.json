@@ -1,24 +1,4 @@
 {
-  "name": "cv-ai-enhancer",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio",
-    "db:setup": "bun run db:push && echo '✅ Tables created. Now run: supabase db reset'",
-    "supabase:start": "supabase start",
-    "supabase:stop": "supabase stop",
-    "supabase:reset": "supabase db reset",
-    "setup": "bun run db:push && supabase db reset",
-    "trigger:dev": "bunx trigger.dev@latest dev",
-    "trigger:deploy": "bunx trigger.dev@latest deploy"
-  },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.73",
     "@mastra/core": "^0.23.3",
@@ -34,14 +14,17 @@
     "@radix-ui/react-tabs": "^1.1.1",
     "@radix-ui/react-toast": "^1.1.5",
     "@react-pdf/renderer": "^3.4.0",
+    "@sparticuz/chromium": "^143.0.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.58.0",
-    "@trigger.dev/sdk": "4.1.2",
+    "@trigger.dev/sdk": "4.3.1",
     "ai": "^5.0.86",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "lucide-react": "^0.468.0",
+    "marked": "^17.0.1",
     "next": "^16.1.1",
+    "puppeteer-core": "^24.34.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^9.0.1",
@@ -51,19 +34,39 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "typescript": "^5.6.0",
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
     "@types/react-syntax-highlighter": "^15.5.11",
-    "prisma": "^5.19.0",
-    "tailwindcss": "^3.4.0",
-    "postcss": "^8.4.35",
     "autoprefixer": "^10.4.17",
     "eslint": "^8.56.0",
-    "eslint-config-next": "^16.1.1"
+    "eslint-config-next": "^16.1.1",
+    "postcss": "^8.4.35",
+    "prisma": "^5.19.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.6.0"
   },
   "engines": {
     "node": ">=20.9.0"
-  }
+  },
+  "name": "cv-ai-enhancer",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:setup": "bun run db:push && echo '✅ Tables created. Now run: supabase db reset'",
+    "db:studio": "prisma studio",
+    "dev": "next dev",
+    "lint": "next lint",
+    "setup": "bun run db:push && supabase db reset",
+    "start": "next start",
+    "supabase:reset": "supabase db reset",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "trigger:deploy": "bunx trigger.dev@latest deploy",
+    "trigger:dev": "bunx trigger.dev@latest dev"
+  },
+  "version": "0.1.0"
 }

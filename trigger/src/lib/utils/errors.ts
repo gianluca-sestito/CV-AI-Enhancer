@@ -1,49 +1,26 @@
 /**
- * Error handling utilities for workflows and tasks
+ * Error handling utilities for tasks
+ * 
+ * Note: Trigger.dev handles retries and error recovery automatically.
+ * These utilities are for logging and formatting errors only.
  */
 
-export interface WorkflowError {
-  message: string;
-  stack?: string;
-  step?: string;
-  context?: Record<string, unknown>;
+/**
+ * Formats an error for logging purposes
+ */
+export function formatError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
 }
 
 /**
- * Formats an error with full context for logging and storage
+ * Formats an error with stack trace for detailed logging
  */
-export function formatError(error: unknown, step?: string, context?: Record<string, unknown>): WorkflowError {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  const errorStack = error instanceof Error ? error.stack : undefined;
-  
-  return {
-    message: errorMessage,
-    stack: errorStack,
-    step,
-    context,
-  };
+export function formatErrorWithStack(error: unknown): string {
+  if (error instanceof Error) {
+    return `${error.message}${error.stack ? `\nStack: ${error.stack}` : ""}`;
+  }
+  return String(error);
 }
-
-/**
- * Creates a detailed error message string for database storage
- */
-export function createErrorMessage(error: unknown, step?: string): string {
-  const formatted = formatError(error, step);
-  let message = formatted.message;
-  
-  if (formatted.step) {
-    message = `[${formatted.step}] ${message}`;
-  }
-  
-  if (formatted.stack) {
-    message = `${message}\nStack: ${formatted.stack}`;
-  }
-  
-  if (formatted.context && Object.keys(formatted.context).length > 0) {
-    message = `${message}\nContext: ${JSON.stringify(formatted.context, null, 2)}`;
-  }
-  
-  return message;
-}
-
-

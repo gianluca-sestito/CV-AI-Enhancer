@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, X } from "lucide-react";
 
@@ -21,6 +22,7 @@ interface Profile {
   country: string | null;
   postalCode: string | null;
   profileImageUrl: string | null;
+  personalSummary: string | null;
 }
 
 export default function PersonalInfoForm({ profile }: { profile: Profile }) {
@@ -34,6 +36,7 @@ export default function PersonalInfoForm({ profile }: { profile: Profile }) {
   const [country, setCountry] = useState(profile.country || "");
   const [postalCode, setPostalCode] = useState(profile.postalCode || "");
   const [profileImageUrl, setProfileImageUrl] = useState(profile.profileImageUrl || "");
+  const [personalSummary, setPersonalSummary] = useState(profile.personalSummary || "");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(profile.profileImageUrl || null);
   const [loading, setLoading] = useState(false);
@@ -131,6 +134,7 @@ export default function PersonalInfoForm({ profile }: { profile: Profile }) {
           city,
           country,
           postalCode,
+          personalSummary,
           profileImageUrl: imageFile ? profileImageUrl : undefined,
         }),
       });
@@ -308,6 +312,18 @@ export default function PersonalInfoForm({ profile }: { profile: Profile }) {
                 onChange={(e) => setPostalCode(e.target.value)}
               />
             </div>
+          </div>
+
+          {/* Personal Summary */}
+          <div className="space-y-2 pt-2 border-t">
+            <Label htmlFor="summary">Personal Summary</Label>
+            <Textarea
+              id="summary"
+              placeholder="Write a brief summary about yourself and your professional background..."
+              value={personalSummary}
+              onChange={(e) => setPersonalSummary(e.target.value)}
+              rows={6}
+            />
           </div>
 
           <Button type="submit" disabled={loading || uploadingImage}>

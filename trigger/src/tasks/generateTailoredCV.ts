@@ -4,16 +4,18 @@ import { mastra } from "../lib/mastra";
 import { prisma } from "../lib/prisma/client";
 import { fetchProfileData } from "../lib/utils/profile";
 
+const payloadSchema = z.object({
+  userId: z.string(),
+  jobDescriptionId: z.string(),
+  analysisResultId: z.string().optional(),
+  jobDescription: z.string(),
+  cvId: z.string(),
+});
+
 export const generateTailoredCV = task({
   id: "generate-tailored-cv",
-  run: async (payload: {
-    userId: string;
-    jobDescriptionId: string;
-    analysisResultId?: string;
-    jobDescription: string;
-    cvId: string;
-  }, { ctx }: any) => {
-    // 1. Verify CV record exists
+  run: async (payload: z.infer<typeof payloadSchema>) => {
+    // Verify CV record exists
     const cvRecord = await prisma.generatedCV.findUnique({
       where: { id: payload.cvId },
     });
@@ -22,53 +24,70 @@ export const generateTailoredCV = task({
       throw new Error("CV record not found");
     }
 
-    try {
-      // 2. Fetch profile data from database
-      const profileData = await fetchProfileData(payload.userId);
+    // Update status to processing
+    await prisma.generatedCV.update({
+      where: { id: payload.cvId },
+      data: { status: "processing" },
+    });
 
-      // 3. Get Mastra workflow
-      const workflow = mastra.getWorkflow("cvGenerationWorkflow");
-      
-      // 4. Execute workflow (handles all steps: extraction, generation, validation, storage)
-      const run = await workflow.createRunAsync();
-      const workflowRunId = (run as any).id || (run as any).runId || String(Date.now());
-      
-      // Store workflow run ID for traceability
-      await prisma.generatedCV.update({
-        where: { id: payload.cvId },
-        data: {
-          workflowRunId,
-          status: "processing",
-        },
-      });
+    // Fetch profile data
+    const profileData = await fetchProfileData(payload.userId);
 
-      const result = await run.start({
-        inputData: {
-          userId: payload.userId,
-          jobDescriptionId: payload.jobDescriptionId,
-          jobDescription: payload.jobDescription,
-          profileData,
-          cvId: payload.cvId,
-        },
-      });
+    // Get the CV generation agent
+    const agent = mastra.getAgent("cvGenerationAgent");
 
-      return {
-        cvId: cvRecord.id,
-        markdownContent: (result as any).outputData?.markdownContent || "",
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorStack = error instanceof Error ? error.stack : undefined;
-      
-      await prisma.generatedCV.update({
-        where: { id: cvRecord.id },
-        data: {
-          status: "failed",
-          errorMessage: `${errorMessage}${errorStack ? `\nStack: ${errorStack}` : ""}`,
-        },
-      });
-      throw error;
-    }
+    // Step 1: Extract relevant experience (optional - can be done by agent)
+    // For now, we'll let the agent handle this internally
+
+    // Step 2: Generate CV content
+    const cvResult = await agent.generate(
+      `Generate a tailored CV in Markdown format based on this profile data and job description.
+
+Profile Data:
+${JSON.stringify(profileData, null, 2)}
+
+Job Description:
+${payload.jobDescription}
+
+Instructions:
+- Generate a professional, well-structured CV in Markdown format
+- Tailor the content to highlight experiences and skills relevant to the job description
+- Include sections: Header (name, contact info), Summary, Experience, Skills, Education, Languages
+- Only include information that exists in the profile data
+- Do not invent or add any information not in the profile
+- If a section has no data in the profile, omit that section entirely
+- Use professional, clear language
+- Format as clean Markdown with proper headings and structure
+
+IMPORTANT: Return ONLY the raw Markdown content. Do NOT wrap it in code blocks (no \`\`\`markdown or \`\`\`). Return the Markdown text directly.`
+    );
+
+    // Clean the markdown content - remove code block wrapper if present
+    let markdownContent = cvResult.text.trim();
+    // Remove markdown code block wrapper (```markdown ... ``` or ``` ... ```)
+    markdownContent = markdownContent
+      .replace(/^```markdown\s*/i, "")
+      .replace(/^```\s*/, "")
+      .replace(/\s*```$/g, "")
+      .trim();
+
+    // Step 3: Validate CV content (basic check - can be enhanced)
+    // For now, we'll store the CV. Advanced validation can be added later if needed.
+
+    // Store CV in database
+    await prisma.generatedCV.update({
+      where: { id: payload.cvId },
+      data: {
+        markdownContent,
+        status: "completed",
+        completedAt: new Date(),
+      },
+    });
+
+    return {
+      cvId: cvRecord.id,
+      markdownContent,
+    };
   },
   retry: {
     maxAttempts: 3,
@@ -76,4 +95,3 @@ export const generateTailoredCV = task({
     minTimeoutInMs: 1000,
   },
 });
-

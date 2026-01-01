@@ -1,8 +1,12 @@
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
 import { ProfileDataSchema, JobRequirementsSchema, MatchScoreOutputSchema, type ProfileData, type JobRequirements, type MatchScoreOutput } from "../../types";
-import { calculateMatchScoreWithLLM } from "../../utils/llm-helpers";
 
+/**
+ * @deprecated This tool is no longer used. Match score calculation is now done
+ * directly in the analyzeJobDescription task using agents with structured output.
+ * This tool is kept for reference but should not be used in new code.
+ */
 export const calculateMatchScore = createTool({
   id: "calculate-match-score",
   description: "Calculates a match score (0-100) based on profile and job requirements",
@@ -12,12 +16,9 @@ export const calculateMatchScore = createTool({
   }),
   outputSchema: MatchScoreOutputSchema,
   execute: async ({ context }: { context: { profileData: ProfileData; requirements: JobRequirements } }): Promise<MatchScoreOutput> => {
-    // Use LLM-based calculation for more accurate semantic matching
-    return await calculateMatchScoreWithLLM(context.profileData, {
-      requiredSkills: context.requirements.requiredSkills,
-      preferredSkills: context.requirements.preferredSkills,
-      qualifications: context.requirements.qualifications,
-    });
+    throw new Error(
+      "This tool is deprecated. Use the analysisAgent directly with structured output instead."
+    );
   },
 });
 

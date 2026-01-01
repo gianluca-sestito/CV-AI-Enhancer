@@ -79,11 +79,16 @@ export const GapSchema = z.object({
   severity: z.enum(["low", "medium", "high"]),
 });
 
+export const MissingSkillSchema = z.object({
+  name: z.string(),
+  type: z.enum(['technical', 'soft-skill', 'programming-language']),
+});
+
 export const AnalysisOutputSchema = z.object({
   matchScore: z.number().min(0).max(100),
   strengths: z.array(StrengthSchema),
   gaps: z.array(GapSchema),
-  missingSkills: z.array(z.string()),
+  missingSkills: z.array(MissingSkillSchema),
   suggestedFocusAreas: z.array(z.string()),
 });
 
@@ -127,5 +132,6 @@ export const CVValidationSchema = z.object({
   violations: z.array(z.string()),
   warnings: z.array(z.string()),
 });
+
 
 

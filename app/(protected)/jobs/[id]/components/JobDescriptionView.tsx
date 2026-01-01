@@ -2,14 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import * as AccordionPrimitive from "@radix-ui/react-accordion";
-import { ChevronDown } from "lucide-react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionHeader,
-} from "@/components/ui/accordion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -22,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Edit, Trash2, Save, X } from "lucide-react";
+import { Edit, Trash2, Save, X, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface JobDescription {
@@ -39,6 +32,7 @@ export default function JobDescriptionView({
 }) {
   const [job, setJob] = useState(initialJob);
   const [isEditing, setIsEditing] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -113,140 +107,167 @@ export default function JobDescriptionView({
     }
   };
 
+  // Calculate if description is long enough to need truncation
+  const descriptionLines = job.description.split('\n');
+  const needsTruncation = descriptionLines.length > 8 || job.description.length > 500;
+
   return (
     <>
-      <Accordion type="single" collapsible defaultValue={undefined} className="w-full">
-        <AccordionItem value="job-description" className="border rounded-lg">
-          <AccordionHeader className="flex items-center justify-between px-4 sm:px-6 py-0">
-            <AccordionPrimitive.Trigger
-              className={cn(
-                "flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180",
-                "hover:no-underline"
-              )}
-            >
-              <div className="text-left">
-                <h3 className="font-semibold">Job Description</h3>
-                {job.company && (
-                  <p className="text-sm text-muted-foreground">at {job.company}</p>
-                )}
-              </div>
-              <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
-            </AccordionPrimitive.Trigger>
-            <div className="flex items-center gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
-              {!isEditing ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleEdit}
-                    className="h-8 w-8"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setShowDeleteDialog(true)}
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleCancel}
-                    className="h-8 w-8"
-                    disabled={loading}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleSave}
-                    className="h-8 w-8"
-                    disabled={loading}
-                  >
-                    <Save className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
-            </div>
-          </AccordionHeader>
-          <AccordionContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-            {isEditing ? (
-              <div className="space-y-4 pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-title">Job Title *</Label>
-                    <Input
-                      id="edit-title"
-                      value={editForm.title}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, title: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-company">Company</Label>
-                    <Input
-                      id="edit-company"
-                      value={editForm.company}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, company: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-
+      <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
+        <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Job Description
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            {!isEditing ? (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleEdit}
+                  className="h-8 w-8"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="h-8 w-8 text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleCancel}
+                  className="h-8 w-8"
+                  disabled={loading}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleSave}
+                  className="h-8 w-8"
+                  disabled={loading}
+                >
+                  <Save className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {isEditing ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-description">Job Description *</Label>
-                  <Textarea
-                    id="edit-description"
-                    value={editForm.description}
+                  <Label htmlFor="edit-title">Job Title *</Label>
+                  <Input
+                    id="edit-title"
+                    value={editForm.title}
                     onChange={(e) =>
-                      setEditForm({ ...editForm, description: e.target.value })
+                      setEditForm({ ...editForm, title: e.target.value })
                     }
-                    rows={12}
                     required
                   />
                 </div>
 
-                <div className="flex gap-4">
-                  <Button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={loading}
-                    className="w-full sm:w-auto"
-                  >
-                    {loading ? "Saving..." : "Save Changes"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCancel}
-                    disabled={loading}
-                    className="w-full sm:w-auto"
-                  >
-                    Cancel
-                  </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-company">Company</Label>
+                  <Input
+                    id="edit-company"
+                    value={editForm.company}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, company: e.target.value })
+                    }
+                  />
                 </div>
               </div>
-            ) : (
-              <div className="whitespace-pre-wrap text-sm pt-4">{job.description}</div>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-description">Job Description *</Label>
+                <Textarea
+                  id="edit-description"
+                  value={editForm.description}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, description: e.target.value })
+                  }
+                  rows={12}
+                  required
+                  className="font-mono text-sm"
+                />
+              </div>
+
+              <div className="flex gap-4">
+                <Button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={loading}
+                  className="w-full sm:w-auto"
+                >
+                  {loading ? "Saving..." : "Save Changes"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={loading}
+                  className="w-full sm:w-auto"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="relative">
+              <div
+                className={cn(
+                  "prose prose-sm max-w-none whitespace-pre-wrap text-sm lg:text-base leading-relaxed text-foreground transition-all duration-300",
+                  !isExpanded && needsTruncation && "max-h-96 overflow-hidden"
+                )}
+              >
+                {job.description}
+              </div>
+              {!isExpanded && needsTruncation && (
+                <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-card via-card/95 to-transparent pointer-events-none" />
+              )}
+              {needsTruncation && (
+                <div className="flex justify-center mt-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="gap-2"
+                  >
+                    {isExpanded ? (
+                      <>
+                        <ChevronUp className="h-4 w-4" />
+                        Show Less
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4" />
+                        Show More
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>

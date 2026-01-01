@@ -1,0 +1,269 @@
+/* CSS Variables for dynamic styling */
+.cv-preview {
+  --cv-font-family-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', sans-serif;
+  --cv-font-family-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', sans-serif;
+  --cv-font-size-base: 1rem;
+  --cv-line-height: 1.6;
+  --cv-primary-color: #1a1a1a;
+  --cv-secondary-color: #666;
+  --cv-background: #faf9f6;
+  --cv-text-color: #1a1a1a;
+  --cv-spacing: 1rem;
+  --cv-heading-spacing: 1.25rem;
+  --cv-section-spacing: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+/* Font Family Variants */
+.cv-preview.font-serif {
+  --cv-font-family-body: 'Georgia', 'Times New Roman', serif;
+  --cv-font-family-heading: 'Georgia', 'Times New Roman', serif;
+}
+
+.cv-preview.font-sans-serif {
+  --cv-font-family-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', sans-serif;
+  --cv-font-family-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', sans-serif;
+}
+
+.cv-preview.font-mixed {
+  --cv-font-family-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', sans-serif;
+  --cv-font-family-heading: 'Georgia', 'Times New Roman', serif;
+}
+
+/* Color Scheme Variants */
+.cv-preview.color-warm {
+  --cv-background: #faf9f6;
+  --cv-text-color: #3d2817;
+  --cv-primary-color: #3d2817;
+  --cv-secondary-color: #6b4e3d;
+  --cv-border-color: #d4c4b0;
+}
+
+.cv-preview.color-cool {
+  --cv-background: #ffffff;
+  --cv-text-color: #1a1a1a;
+  --cv-primary-color: #1e40af;
+  --cv-secondary-color: #64748b;
+  --cv-border-color: #e2e8f0;
+}
+
+.cv-preview.color-minimal {
+  --cv-background: #ffffff;
+  --cv-text-color: #1a1a1a;
+  --cv-primary-color: #1a1a1a;
+  --cv-secondary-color: #6b7280;
+  --cv-border-color: #f3f4f6;
+}
+
+/* Layout Variants */
+.cv-preview.layout-traditional {
+  max-width: 100%;
+  padding: 2rem;
+}
+
+.cv-preview.layout-modern {
+  max-width: 100%;
+  padding: 2rem;
+}
+
+.cv-preview.layout-compact {
+  max-width: 100%;
+  padding: 1.5rem;
+  --cv-spacing: 0.75rem;
+  --cv-heading-spacing: 1rem;
+  --cv-section-spacing: 1.25rem;
+}
+
+/* Spacing Variants */
+.cv-preview.spacing-compact {
+  --cv-spacing: 0.5rem;
+  --cv-heading-spacing: 0.75rem;
+  --cv-section-spacing: 1rem;
+}
+
+.cv-preview.spacing-normal {
+  --cv-spacing: 1rem;
+  --cv-heading-spacing: 1.25rem;
+  --cv-section-spacing: 1.5rem;
+}
+
+.cv-preview.spacing-spacious {
+  --cv-spacing: 1.5rem;
+  --cv-heading-spacing: 2rem;
+  --cv-section-spacing: 2.5rem;
+}
+
+/* Font Size Variants */
+.cv-preview.fontsize-small {
+  --cv-font-size-base: 0.875rem;
+}
+
+.cv-preview.fontsize-medium {
+  --cv-font-size-base: 1rem;
+}
+
+.cv-preview.fontsize-large {
+  --cv-font-size-base: 1.125rem;
+}
+
+/* Base Markdown Preview Styles */
+.markdown-preview {
+  max-width: 100%;
+  line-height: var(--cv-line-height, 1.6);
+  color: var(--cv-text-color, #1a1a1a);
+  background-color: var(--cv-background, #ffffff);
+  font-family: var(--cv-font-family-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', sans-serif);
+  font-size: var(--cv-font-size-base, 1rem);
+  padding: var(--cv-section-spacing, 1.5rem);
+  border-radius: 0.5rem;
+  min-height: 100%;
+  transition: all 0.3s ease;
+}
+
+.markdown-preview h1 {
+  font-size: calc(var(--cv-font-size-base) * 2);
+  font-weight: bold;
+  margin-top: var(--cv-section-spacing);
+  margin-bottom: var(--cv-spacing);
+  line-height: 1.2;
+  color: var(--cv-primary-color);
+  font-family: var(--cv-font-family-heading);
+  /* Layout-specific h1 styles */
+  text-align: var(--cv-h1-text-align, left);
+  border-bottom: var(--cv-h1-border-bottom, none);
+  padding-bottom: var(--cv-h1-padding-bottom, 0);
+  margin-bottom: var(--cv-h1-margin-bottom, var(--cv-spacing));
+}
+
+.markdown-preview h2 {
+  font-size: calc(var(--cv-font-size-base) * 1.5);
+  font-weight: bold;
+  margin-top: var(--cv-heading-spacing);
+  margin-bottom: var(--cv-spacing);
+  line-height: 1.3;
+  color: var(--cv-primary-color);
+  font-family: var(--cv-font-family-heading);
+  /* Layout-specific heading styles */
+  border-bottom: var(--cv-h2-border-bottom, 1px solid var(--cv-border-color));
+  padding-bottom: var(--cv-h2-padding-bottom, 0.5rem);
+  text-transform: var(--cv-h2-text-transform, none);
+  letter-spacing: var(--cv-h2-letter-spacing, normal);
+}
+
+.markdown-preview h3 {
+  font-size: calc(var(--cv-font-size-base) * 1.25);
+  font-weight: bold;
+  margin-top: var(--cv-heading-spacing);
+  margin-bottom: var(--cv-spacing);
+  line-height: 1.4;
+  color: var(--cv-primary-color);
+  font-family: var(--cv-font-family-heading);
+}
+
+.markdown-preview h4 {
+  font-size: calc(var(--cv-font-size-base) * 1.125);
+  font-weight: bold;
+  margin-top: var(--cv-heading-spacing);
+  margin-bottom: var(--cv-spacing);
+  line-height: 1.4;
+  color: var(--cv-primary-color);
+  font-family: var(--cv-font-family-heading);
+}
+
+.markdown-preview p {
+  margin-bottom: var(--cv-spacing);
+  line-height: var(--cv-line-height);
+}
+
+.markdown-preview ul,
+.markdown-preview ol {
+  margin-left: var(--cv-list-margin-left, 1.5rem);
+  margin-bottom: var(--cv-spacing);
+  padding-left: var(--cv-list-padding-left, 0);
+}
+
+.markdown-preview li {
+  margin-bottom: calc(var(--cv-spacing) * 0.25);
+  line-height: var(--cv-line-height);
+}
+
+.markdown-preview strong {
+  font-weight: 600;
+  color: var(--cv-primary-color);
+}
+
+.markdown-preview em {
+  font-style: italic;
+}
+
+.markdown-preview a {
+  color: var(--cv-primary-color);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.markdown-preview a:hover {
+  text-decoration: none;
+}
+
+.markdown-preview img {
+  max-width: 100%;
+  height: auto;
+  margin: var(--cv-spacing) 0;
+  border-radius: 0.25rem;
+}
+
+.markdown-preview hr {
+  border: none;
+  border-top: var(--cv-hr-border-top, 1px solid var(--cv-border-color));
+  margin: var(--cv-section-spacing) 0;
+  display: var(--cv-hr-display, block);
+}
+
+.markdown-preview code {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.875em;
+}
+
+.markdown-preview pre {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: var(--cv-spacing);
+  border-radius: 0.375rem;
+  overflow-x: auto;
+  margin-bottom: var(--cv-spacing);
+}
+
+.markdown-preview pre code {
+  background: none;
+  padding: 0;
+}
+
+.markdown-preview blockquote {
+  border-left: 3px solid var(--cv-border-color);
+  padding-left: var(--cv-spacing);
+  margin-left: 0;
+  color: var(--cv-secondary-color);
+  font-style: italic;
+}
+
+.markdown-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--cv-spacing);
+}
+
+.markdown-preview th,
+.markdown-preview td {
+  border: 1px solid var(--cv-border-color);
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.markdown-preview th {
+  background-color: rgba(0, 0, 0, 0.05);
+  font-weight: 600;
+  color: var(--cv-primary-color);
+}
