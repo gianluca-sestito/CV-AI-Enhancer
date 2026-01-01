@@ -139,6 +139,7 @@ Return only the JSON object.`,
         missingSkills: analysis.missingSkills,
         suggestedFocusAreas: analysis.suggestedFocusAreas,
         rawAnalysis: analysis,
+        jobRequirements: requirements, // Store extracted job requirements for reuse
         status: "completed",
         completedAt: new Date(),
       },

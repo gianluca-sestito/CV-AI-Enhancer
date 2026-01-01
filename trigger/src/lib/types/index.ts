@@ -14,6 +14,14 @@ import {
   ProfileValidationSchema,
   CVValidationSchema,
 } from "./schemas";
+import {
+  CVStructureSchema,
+  CVContentSchema,
+  CVFormatSchema,
+  type CVStructure,
+  type CVContent,
+  type CVFormat,
+} from "./cvSchemas";
 
 // TypeScript types derived from Zod schemas
 export type ProfileData = z.infer<typeof ProfileDataSchema>;
@@ -45,7 +53,13 @@ export {
   MatchScoreOutputSchema,
   ProfileValidationSchema,
   CVValidationSchema,
+  CVStructureSchema,
+  CVContentSchema,
+  CVFormatSchema,
 };
+
+// Re-export CV types
+export type { CVStructure, CVContent, CVFormat };
 
 
 

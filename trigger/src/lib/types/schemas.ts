@@ -49,6 +49,55 @@ export const LanguageSchema = z.object({
   updatedAt: z.date(),
 });
 
+// Import schema (without IDs and timestamps - these will be generated)
+export const ImportWorkExperienceSchema = z.object({
+  company: z.string(),
+  position: z.string(),
+  startDate: z.string(), // ISO date string
+  endDate: z.string().nullable(), // ISO date string or null
+  current: z.boolean(),
+  description: z.string(),
+});
+
+export const ImportSkillSchema = z.object({
+  name: z.string(),
+  category: z.enum(["Technical", "Soft Skills", "Programming Language"]),
+  proficiencyLevel: z.enum(["Expert", "Advanced", "Intermediate", "Beginner"]).nullable(),
+});
+
+export const ImportEducationSchema = z.object({
+  institution: z.string(),
+  degree: z.string(),
+  fieldOfStudy: z.string().nullable(),
+  startDate: z.string(), // ISO date string
+  endDate: z.string().nullable(), // ISO date string or null
+  current: z.boolean(),
+  description: z.string().nullable(),
+});
+
+export const ImportLanguageSchema = z.object({
+  name: z.string(),
+  proficiencyLevel: z.string(),
+});
+
+export const ImportProfileDataSchema = z.object({
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  email: z.string().nullable(),
+  phone: z.string().nullable(),
+  location: z.string().nullable(),
+  address: z.string().nullable(),
+  city: z.string().nullable(),
+  country: z.string().nullable(),
+  postalCode: z.string().nullable(),
+  profileImageUrl: z.string().nullable(),
+  personalSummary: z.string().nullable(),
+  workExperiences: z.array(ImportWorkExperienceSchema),
+  skills: z.array(ImportSkillSchema),
+  education: z.array(ImportEducationSchema),
+  languages: z.array(ImportLanguageSchema),
+});
+
 export const ProfileDataSchema = z.object({
   firstName: z.string().nullable(),
   lastName: z.string().nullable(),

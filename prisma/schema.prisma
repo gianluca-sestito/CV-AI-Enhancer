@@ -127,6 +127,7 @@ model AnalysisResult {
   missingSkills      Json     @map("missing_skills") // Array of strings
   suggestedFocusAreas Json    @map("suggested_focus_areas") // Array of strings
   rawAnalysis        Json?    @map("raw_analysis")
+  jobRequirements    Json?    @map("job_requirements") // Extracted job requirements (requiredSkills, preferredSkills, etc.)
   workflowRunId      String?  @map("workflow_run_id") @db.Text
   status             String   @db.Text // "pending", "processing", "completed", "failed"
   errorMessage       String?  @map("error_message") @db.Text
@@ -147,7 +148,9 @@ model GeneratedCV {
   userId            String   @map("user_id") @db.Uuid
   jobDescriptionId  String   @map("job_description_id") @db.Uuid
   analysisResultId String?  @map("analysis_result_id") @db.Uuid
-  markdownContent   String   @map("markdown_content") @db.Text
+  markdownContent   String?  @map("markdown_content") @db.Text // Deprecated, kept for backward compatibility
+  structuredContent Json?    @map("structured_content") // Structured CV data (new format)
+  styles            Json?    @map("styles") // CV styling configuration
   workflowRunId     String?  @map("workflow_run_id") @db.Text
   status            String   @db.Text // "pending", "processing", "completed", "failed"
   errorMessage      String?  @map("error_message") @db.Text
