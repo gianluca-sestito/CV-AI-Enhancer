@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { FileText, Calendar, Sparkles, ExternalLink } from "lucide-react";
+import { FileText, Calendar, Sparkles, ExternalLink, Trash2 } from "lucide-react";
 
 interface JobDescription {
   id: string;
@@ -56,6 +56,7 @@ export default function CVGenerator({
   existingCVs?: GeneratedCV[];
 }) {
   const [loading, setLoading] = useState(false);
+  const [deletingCVId, setDeletingCVId] = useState<string | null>(null);
   const router = useRouter();
 
   const handleGenerate = async () => {
@@ -81,6 +82,33 @@ export default function CVGenerator({
       alert("Failed to generate CV. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (cvId: string) => {
+    if (!confirm("Are you sure you want to delete this CV? This action cannot be undone.")) {
+      return;
+    }
+
+    setDeletingCVId(cvId);
+
+    try {
+      const response = await fetch(`/api/cv/${cvId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete CV");
+      }
+
+      // Refresh the page to update the CV list
+      router.refresh();
+    } catch (error) {
+      console.error("Error deleting CV:", error);
+      alert(error instanceof Error ? error.message : "Failed to delete CV. Please try again.");
+    } finally {
+      setDeletingCVId(null);
     }
   };
 
@@ -146,26 +174,37 @@ export default function CVGenerator({
                       )}
                     </div>
                   </div>
-                  {cv.status === "completed" && (
-                    <Link href={`/cv/${cv.id}`}>
-                      <Button variant="outline" size="sm" className="shrink-0">
-                        <ExternalLink className="h-3 w-3 mr-1.5" />
-                        View
+                  <div className="flex items-center gap-2 shrink-0">
+                    {cv.status === "completed" && (
+                      <Link href={`/cv/${cv.id}`}>
+                        <Button variant="outline" size="sm">
+                          <ExternalLink className="h-3 w-3 mr-1.5" />
+                          View
+                        </Button>
+                      </Link>
+                    )}
+                    {cv.status === "processing" && (
+                      <Button variant="outline" size="sm" disabled>
+                        Processing...
                       </Button>
-                    </Link>
-                  )}
-                  {cv.status === "processing" && (
-                    <Button variant="outline" size="sm" disabled className="shrink-0">
-                      Processing...
+                    )}
+                    {cv.status === "failed" && (
+                      <Link href={`/cv/${cv.id}`}>
+                        <Button variant="outline" size="sm">
+                          Details
+                        </Button>
+                      </Link>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(cv.id)}
+                      disabled={deletingCVId === cv.id}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className={`h-3 w-3 ${deletingCVId === cv.id ? "animate-spin" : ""}`} />
                     </Button>
-                  )}
-                  {cv.status === "failed" && (
-                    <Link href={`/cv/${cv.id}`}>
-                      <Button variant="outline" size="sm" className="shrink-0">
-                        Details
-                      </Button>
-                    </Link>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>

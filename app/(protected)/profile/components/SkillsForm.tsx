@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,10 +59,44 @@ export default function SkillsForm({
   const [showAddDialog, setShowAddDialog] = useState(false);
   const router = useRouter();
 
+  // Sync items when skills prop changes (e.g., after import)
+  useEffect(() => {
+    setItems(skills);
+  }, [skills]);
+
+  // Normalize category names to match predefined categories
+  const normalizeCategory = (category: string | null): SkillCategory => {
+    if (!category) return "Technical"; // Default to Technical if missing
+    const normalized = category.trim();
+    
+    // Try exact match first
+    if (CATEGORIES.includes(normalized as SkillCategory)) {
+      return normalized as SkillCategory;
+    }
+    
+    // Try case-insensitive match
+    const lower = normalized.toLowerCase();
+    for (const cat of CATEGORIES) {
+      if (cat.toLowerCase() === lower) {
+        return cat;
+      }
+    }
+    
+    // Try partial matches
+    if (lower.includes("programming") || lower.includes("language")) {
+      return "Programming Language";
+    }
+    if (lower.includes("soft") || lower.includes("interpersonal") || lower.includes("communication") || lower.includes("leadership")) {
+      return "Soft Skills";
+    }
+    
+    // Default to Technical for everything else
+    return "Technical";
+  };
+
   // Group skills by category
   const skillsByCategory = items.reduce((acc, skill) => {
-    const category = (skill.category as SkillCategory) || null;
-    if (!category || !CATEGORIES.includes(category)) return acc;
+    const category = normalizeCategory(skill.category);
     
     if (!acc[category]) {
       acc[category] = [];
@@ -74,13 +108,14 @@ export default function SkillsForm({
   // Group skills by proficiency within a category
   const groupByProficiency = (categorySkills: Skill[]) => {
     return categorySkills.reduce((acc, skill) => {
-      const level = (skill.proficiencyLevel as typeof PROFICIENCY_LEVELS[number]) || null;
-      if (!level || !PROFICIENCY_LEVELS.includes(level)) return acc;
+      const level = (skill.proficiencyLevel as typeof PROFICIENCY_LEVELS[number]) || "Intermediate";
+      // Use the level if it's valid, otherwise default to "Intermediate"
+      const validLevel = PROFICIENCY_LEVELS.includes(level) ? level : "Intermediate";
       
-      if (!acc[level]) {
-        acc[level] = [];
+      if (!acc[validLevel]) {
+        acc[validLevel] = [];
       }
-      acc[level].push(skill);
+      acc[validLevel].push(skill);
       return acc;
     }, {} as Record<typeof PROFICIENCY_LEVELS[number], Skill[]>);
   };
@@ -104,21 +139,78 @@ export default function SkillsForm({
     setShowAddDialog(true);
   };
 
-  const handleSaveSkill = () => {
+  const handleSaveSkill = async () => {
     if (!editingSkill || !editingSkill.name || !editingSkill.category || !editingSkill.proficiencyLevel) {
       return;
     }
 
     if (editingSkill.id.startsWith("new-")) {
-      // New skill
-      setItems([...items, editingSkill]);
+      // New skill - save immediately to database
+      setLoading(true);
+      try {
+        const response = await fetch("/api/profile/skills/add", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            profileId,
+            name: editingSkill.name,
+            category: editingSkill.category,
+            proficiencyLevel: editingSkill.proficiencyLevel,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to add skill");
+        }
+
+        const result = await response.json();
+        // Update local state with the saved skill (which now has a real ID)
+        setItems([...items, result.skill]);
+        router.refresh();
+      } catch (error) {
+        console.error("Error adding skill:", error);
+        alert(error instanceof Error ? error.message : "Failed to add skill");
+        return; // Don't close dialog on error
+      } finally {
+        setLoading(false);
+      }
     } else {
-      // Update existing
-      setItems(
-        items.map((item) =>
-          item.id === editingSkill.id ? editingSkill : item
-        )
-      );
+      // Update existing skill - save immediately to database
+      setLoading(true);
+      try {
+        const response = await fetch("/api/profile/skills/update", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            skillId: editingSkill.id,
+            profileId,
+            name: editingSkill.name,
+            category: editingSkill.category,
+            proficiencyLevel: editingSkill.proficiencyLevel,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to update skill");
+        }
+
+        const result = await response.json();
+        // Update local state with the updated skill
+        setItems(
+          items.map((item) =>
+            item.id === editingSkill.id ? result.skill : item
+          )
+        );
+        router.refresh();
+      } catch (error) {
+        console.error("Error updating skill:", error);
+        alert(error instanceof Error ? error.message : "Failed to update skill");
+        return; // Don't close dialog on error
+      } finally {
+        setLoading(false);
+      }
     }
     setEditingSkill(null);
     setShowAddDialog(false);
@@ -393,12 +485,13 @@ export default function SkillsForm({
               type="button"
               onClick={handleSaveSkill}
               disabled={
+                loading ||
                 !editingSkill?.name ||
                 !editingSkill?.category ||
                 !editingSkill?.proficiencyLevel
               }
             >
-              {editingSkill?.id.startsWith("new-") ? "Add" : "Save"}
+              {loading ? "Saving..." : editingSkill?.id.startsWith("new-") ? "Add" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>

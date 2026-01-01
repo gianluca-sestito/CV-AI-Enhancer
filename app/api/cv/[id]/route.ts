@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma/client";
 import { z } from "zod";
 
 const updateCVSchema = z.object({
-  markdownContent: z.string(),
+  structuredContent: z.any().optional(), // Structured CV data
+  markdownContent: z.string().optional(), // Deprecated, kept for backward compatibility
 });
 
 export async function GET(
@@ -65,12 +66,18 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Update CV markdown content
+    // Update CV content (prefer structuredContent, fallback to markdownContent for backward compatibility)
+    const updateData: any = {};
+    if (validatedData.structuredContent !== undefined) {
+      updateData.structuredContent = validatedData.structuredContent;
+    }
+    if (validatedData.markdownContent !== undefined) {
+      updateData.markdownContent = validatedData.markdownContent;
+    }
+
     const updatedCV = await prisma.generatedCV.update({
       where: { id },
-      data: {
-        markdownContent: validatedData.markdownContent,
-      },
+      data: updateData,
       include: {
         jobDescription: true,
       },
@@ -85,6 +92,42 @@ export async function PUT(
       );
     }
 
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await requireAuth();
+    const { id } = await params;
+
+    // Check if CV exists and user owns it
+    const existingCV = await prisma.generatedCV.findUnique({
+      where: { id },
+    });
+
+    if (!existingCV) {
+      return NextResponse.json({ error: "CV not found" }, { status: 404 });
+    }
+
+    if (existingCV.userId !== user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    // Delete CV
+    await prisma.generatedCV.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true, message: "CV deleted successfully" });
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json(
       { error: errorMessage },

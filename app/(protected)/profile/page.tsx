@@ -1,6 +1,7 @@
 import { requireAuth } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma/client";
 import ProfileForm from "./components/ProfileForm";
+import ImportCV from "./components/ImportCV";
 
 export default async function ProfilePage() {
   const user = await requireAuth();
@@ -32,7 +33,12 @@ export default async function ProfilePage() {
           Manage your professional profile information
         </p>
       </div>
+      
       <ProfileForm profile={profile} />
+      
+      <div className="mt-8">
+        <ImportCV />
+      </div>
     </div>
   );
 }

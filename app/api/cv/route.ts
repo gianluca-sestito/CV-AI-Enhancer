@@ -13,14 +13,22 @@ export async function POST(request: NextRequest) {
       jobDescription,
     } = body;
 
+    // Validate required fields
+    if (!analysisResultId) {
+      return NextResponse.json(
+        { error: "analysisResultId is required" },
+        { status: 400 }
+      );
+    }
+
     // Create CV record
     const cv = await prisma.generatedCV.create({
       data: {
         userId: user.id,
         jobDescriptionId,
-        analysisResultId: analysisResultId || null,
+        analysisResultId: analysisResultId,
         status: "processing",
-        markdownContent: "",
+        markdownContent: null, // Deprecated, will be replaced by structuredContent
       },
     });
 

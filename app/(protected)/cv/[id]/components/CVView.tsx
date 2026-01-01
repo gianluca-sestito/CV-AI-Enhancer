@@ -1,25 +1,25 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Download, Save, Check } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import CVEditorControls from "./CVEditorControls";
-import {
-  CVEditorSettings,
-  defaultSettings,
-  loadSettings,
-  saveSettings,
-} from "./CVEditorSettings";
-import { cn } from "@/lib/utils";
-import "./CVView.module.css";
+import { Loader2, Download, Edit, Eye, Check, AlertCircle, Menu, X } from "lucide-react";
+import { useCVEditor } from "./useCVEditor";
+import { CVStyleProvider } from "./CVStyleProvider";
+import CVEditorSidebar from "./CVEditorSidebar";
+import CvLayout from "./CvLayout";
+import CvHeader from "./CvHeader";
+import CvSection from "./CvSection";
+import ExperienceItem from "./ExperienceItem";
+import SkillsSection from "./SkillsSection";
+import LanguageSection from "./LanguageSection";
+import type { CVData } from "./types";
 
 interface GeneratedCV {
   id: string;
-  markdownContent: string;
+  markdownContent?: string | null;
+  structuredContent?: CVData | null;
   status: string;
   jobDescription: {
     title: string;
@@ -29,30 +29,18 @@ interface GeneratedCV {
 
 export default function CVView({ cv: initialCV }: { cv: GeneratedCV }) {
   const [cv, setCV] = useState(initialCV);
-  const [markdownContent, setMarkdownContent] = useState(cv.markdownContent || "");
   const [loading, setLoading] = useState(cv.status === "processing");
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const [isMounted, setIsMounted] = useState(false);
-  const [editorSettings, setEditorSettings] = useState<CVEditorSettings>(defaultSettings);
-  const [showSettings, setShowSettings] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
 
-  // Ensure component is mounted before rendering ReactMarkdown to avoid hydration issues
-  useEffect(() => {
-    setIsMounted(true);
-    // Load saved settings
-    const savedSettings = loadSettings(cv.id);
-    setEditorSettings(savedSettings);
-  }, [cv.id]);
-
-  // Update local markdown when CV updates
-  useEffect(() => {
-    if (cv.markdownContent !== markdownContent && !isDirty) {
-      setMarkdownContent(cv.markdownContent || "");
-    }
-  }, [cv.markdownContent]);
+  const {
+    cvData,
+    isEditing,
+    toggleEdit,
+    updateCVData,
+    saveStatus,
+    isDirty,
+  } = useCVEditor(cv.id, initialCV.structuredContent || null);
 
   // Poll for CV updates if processing
   useEffect(() => {
@@ -66,10 +54,6 @@ export default function CVView({ cv: initialCV }: { cv: GeneratedCV }) {
             if (data.status === "completed" || data.status === "failed") {
               setLoading(false);
               clearInterval(interval);
-              if (data.status === "completed" && data.markdownContent) {
-                setMarkdownContent(data.markdownContent);
-                setIsDirty(false);
-              }
             }
           }
         } catch (error) {
@@ -81,256 +65,40 @@ export default function CVView({ cv: initialCV }: { cv: GeneratedCV }) {
     }
   }, [cv.id, cv.status]);
 
-  const handleMarkdownChange = (value: string) => {
-    setMarkdownContent(value);
-    setIsDirty(value !== cv.markdownContent);
-    setSaveStatus("idle");
-  };
-
-  const handleSave = async () => {
-    if (!isDirty) return;
-
-    setIsSaving(true);
-    setSaveStatus("saving");
-
-    try {
-      const response = await fetch(`/api/cv/${cv.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ markdownContent }),
-      });
-
-      if (!response.ok) throw new Error("Failed to save CV");
-
-      const data = await response.json();
-      setCV(data);
-      setIsDirty(false);
-      setSaveStatus("saved");
-      
-      // Reset saved status after 2 seconds
-      setTimeout(() => setSaveStatus("idle"), 2000);
-    } catch (error) {
-      console.error("Error saving CV:", error);
-      setSaveStatus("idle");
-      alert("Failed to save CV. Please try again.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const handleDownloadPDF = () => {
     window.open(`/api/cv/${cv.id}/pdf`, "_blank");
   };
 
-  // Debounced settings save (skip initial mount)
-  const isInitialMount = useRef(true);
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    const timeoutId = setTimeout(() => {
-      saveSettings(cv.id, editorSettings);
-    }, 500);
-    return () => clearTimeout(timeoutId);
-  }, [editorSettings, cv.id]);
-
-  const handleSettingsChange = useCallback((newSettings: CVEditorSettings) => {
-    setEditorSettings(newSettings);
-  }, []);
-
-  const handleResetSettings = () => {
-    setEditorSettings(defaultSettings);
-    saveSettings(cv.id, defaultSettings);
+  const handleEditToggle = () => {
+    toggleEdit();
+    setSidebarOpen(!sidebarOpen);
   };
 
-  // Generate inline styles based on settings
-  const previewStyles = useMemo((): React.CSSProperties => {
-    // Font families
-    const fontFamilies = {
-      serif: {
-        body: "'Georgia', 'Times New Roman', serif",
-        heading: "'Georgia', 'Times New Roman', serif",
-      },
-      'sans-serif': {
-        body: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', sans-serif",
-        heading: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', sans-serif",
-      },
-      mixed: {
-        body: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', sans-serif",
-        heading: "'Georgia', 'Times New Roman', serif",
-      },
-    };
+  const getSaveStatusIcon = () => {
+    switch (saveStatus) {
+      case "saving":
+        return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
+      case "saved":
+        return <Check className="h-4 w-4 text-green-500" />;
+      case "error":
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return null;
+    }
+  };
 
-    // Color schemes
-    const colorSchemes = {
-      warm: {
-        background: '#faf9f6',
-        text: '#3d2817',
-        primary: '#3d2817',
-        secondary: '#6b4e3d',
-        border: '#d4c4b0',
-      },
-      cool: {
-        background: '#ffffff',
-        text: '#1a1a1a',
-        primary: '#1e40af',
-        secondary: '#64748b',
-        border: '#e2e8f0',
-      },
-      minimal: {
-        background: '#ffffff',
-        text: '#1a1a1a',
-        primary: '#1a1a1a',
-        secondary: '#6b7280',
-        border: '#f3f4f6',
-      },
-      custom: editorSettings.customColors ? {
-        background: editorSettings.customColors.background,
-        text: editorSettings.customColors.text,
-        primary: editorSettings.customColors.primary,
-        secondary: editorSettings.customColors.secondary,
-        border: editorSettings.customColors.secondary,
-      } : {
-        background: '#ffffff',
-        text: '#1a1a1a',
-        primary: '#1a1a1a',
-        secondary: '#6b7280',
-        border: '#f3f4f6',
-      },
-    };
-
-    // Spacing
-    const spacingValues = {
-      compact: { base: '0.5rem', heading: '0.75rem', section: '1rem' },
-      normal: { base: '1rem', heading: '1.25rem', section: '1.5rem' },
-      spacious: { base: '1.5rem', heading: '2rem', section: '2.5rem' },
-    };
-
-    // Font sizes
-    const fontSizes = {
-      small: '0.875rem',
-      medium: '1rem',
-      large: '1.125rem',
-    };
-
-    const fonts = fontFamilies[editorSettings.fontFamily];
-    const colors = colorSchemes[editorSettings.colorScheme];
-    const spacing = spacingValues[editorSettings.spacing];
-    const fontSize = fontSizes[editorSettings.fontSize];
-
-    // Layout configurations - computed with actual color and spacing values
-    const layouts = {
-      traditional: {
-        padding: '2.5rem',
-        maxWidth: '800px',
-        textAlign: 'left' as const,
-        margin: '0 auto',
-        // H1 styles
-        h1TextAlign: 'center',
-        h1BorderBottom: `3px solid ${colors.primary}`,
-        h1PaddingBottom: '1rem',
-        h1MarginBottom: '2rem',
-        // H2 styles
-        h2BorderBottom: `2px solid ${colors.border}`,
-        h2PaddingBottom: '0.75rem',
-        h2TextTransform: 'uppercase',
-        h2LetterSpacing: '0.05em',
-        // List styles
-        listMarginLeft: '1.5rem',
-        listPaddingLeft: '0',
-        // HR styles
-        hrBorderTop: `2px solid ${colors.border}`,
-        hrDisplay: 'block',
-      },
-      modern: {
-        padding: '2rem',
-        maxWidth: '100%',
-        textAlign: 'left' as const,
-        margin: '0',
-        // H1 styles
-        h1TextAlign: 'left',
-        h1BorderBottom: 'none',
-        h1PaddingBottom: '0',
-        h1MarginBottom: spacing.base,
-        // H2 styles
-        h2BorderBottom: `1px solid ${colors.border}`,
-        h2PaddingBottom: '0.5rem',
-        h2TextTransform: 'none',
-        h2LetterSpacing: 'normal',
-        // List styles
-        listMarginLeft: '1.25rem',
-        listPaddingLeft: '0.5rem',
-        // HR styles
-        hrBorderTop: 'none',
-        hrDisplay: 'none',
-      },
-      compact: {
-        padding: '1.25rem',
-        maxWidth: '100%',
-        textAlign: 'left' as const,
-        margin: '0',
-        // H1 styles
-        h1TextAlign: 'left',
-        h1BorderBottom: 'none',
-        h1PaddingBottom: '0',
-        h1MarginBottom: spacing.base,
-        // H2 styles
-        h2BorderBottom: `1px solid ${colors.border}`,
-        h2PaddingBottom: '0.25rem',
-        h2TextTransform: 'none',
-        h2LetterSpacing: 'normal',
-        // List styles
-        listMarginLeft: '1rem',
-        listPaddingLeft: '0',
-        // HR styles
-        hrBorderTop: 'none',
-        hrDisplay: 'none',
-      },
-    };
-
-    const layout = layouts[editorSettings.layout];
-
-    const styles: React.CSSProperties = {
-      // CSS Variables
-      '--cv-font-family-body': fonts.body,
-      '--cv-font-family-heading': fonts.heading,
-      '--cv-font-size-base': fontSize,
-      '--cv-background': colors.background,
-      '--cv-text-color': colors.text,
-      '--cv-primary-color': colors.primary,
-      '--cv-secondary-color': colors.secondary,
-      '--cv-border-color': colors.border,
-      '--cv-spacing': spacing.base,
-      '--cv-heading-spacing': spacing.heading,
-      '--cv-section-spacing': spacing.section,
-      '--cv-line-height': '1.6',
-      // Layout-specific CSS variables
-      '--cv-h1-text-align': layout.h1TextAlign,
-      '--cv-h1-border-bottom': layout.h1BorderBottom,
-      '--cv-h1-padding-bottom': layout.h1PaddingBottom,
-      '--cv-h1-margin-bottom': layout.h1MarginBottom,
-      '--cv-h2-border-bottom': layout.h2BorderBottom,
-      '--cv-h2-padding-bottom': layout.h2PaddingBottom,
-      '--cv-h2-text-transform': layout.h2TextTransform,
-      '--cv-h2-letter-spacing': layout.h2LetterSpacing,
-      '--cv-list-margin-left': layout.listMarginLeft,
-      '--cv-list-padding-left': layout.listPaddingLeft,
-      '--cv-hr-border-top': layout.hrBorderTop,
-      '--cv-hr-display': layout.hrDisplay,
-      // Direct styles
-      padding: layout.padding,
-      maxWidth: layout.maxWidth,
-      textAlign: layout.textAlign,
-      margin: layout.margin,
-      backgroundColor: colors.background,
-      color: colors.text,
-      fontFamily: fonts.body,
-      fontSize: fontSize,
-    };
-    
-    return styles;
-  }, [editorSettings]);
+  const getSaveStatusText = () => {
+    switch (saveStatus) {
+      case "saving":
+        return "Saving...";
+      case "saved":
+        return "Saved";
+      case "error":
+        return "Error saving";
+      default:
+        return isDirty ? "Unsaved changes" : "";
+    }
+  };
 
   if (loading) {
     return (
@@ -361,144 +129,178 @@ export default function CVView({ cv: initialCV }: { cv: GeneratedCV }) {
     );
   }
 
+  if (!cvData) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <Card>
+          <CardContent className="py-6">
+            <h2 className="text-xl font-bold mb-2">CV Not Available</h2>
+            <p className="text-muted-foreground mb-4">
+              This CV does not have structured content. Please regenerate it.
+            </p>
+            <Button onClick={() => router.back()}>Go Back</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-      {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex-1">
-          <h1 className="text-2xl sm:text-3xl font-bold">CV Editor</h1>
-          <p className="text-muted-foreground mt-2">
-            Tailored for {cv.jobDescription.title}
-            {cv.jobDescription.company && ` at ${cv.jobDescription.company}`}
-          </p>
-        </div>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Button
-            onClick={handleSave}
-            disabled={!isDirty || isSaving}
-            variant="default"
-            className="w-full sm:w-auto"
-          >
-            {saveStatus === "saving" ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : saveStatus === "saved" ? (
-              <>
-                <Check className="h-4 w-4 mr-2" />
-                Saved
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Save
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={handleDownloadPDF}
-            variant="outline"
-            className="w-full sm:w-auto"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Download PDF
-          </Button>
-        </div>
-      </div>
+    <CVStyleProvider cvId={cv.id}>
+      <div className="flex h-screen overflow-hidden">
+        {/* Sidebar */}
+        {isEditing && (
+          <CVEditorSidebar
+            cvId={cv.id}
+            cvData={cvData}
+            updateCVData={updateCVData}
+            onClose={() => {
+              setSidebarOpen(false);
+              toggleEdit();
+            }}
+          />
+        )}
 
-      {/* Desktop: Split View */}
-      <div className="hidden lg:grid lg:grid-cols-2 gap-4">
-        {/* Left: Markdown Editor */}
-        <Card className="flex flex-col">
-          <CardContent className="p-4 flex-1 flex flex-col">
-            <div className="mb-2 text-sm font-medium text-muted-foreground">
-              Markdown
-            </div>
-            <textarea
-              value={markdownContent}
-              onChange={(e) => handleMarkdownChange(e.target.value)}
-              className="flex-1 w-full p-4 border rounded-md font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Enter your CV markdown here..."
-            />
-          </CardContent>
-        </Card>
-
-        {/* Right: Live Preview */}
-        <Card className="flex flex-col">
-          <CardContent className="p-4 sm:p-6 lg:p-8 flex-1 overflow-auto">
-            <div className="mb-2 text-sm font-medium text-muted-foreground">
-              Preview
-            </div>
-            <div 
-              className="markdown-preview cv-preview" 
-              style={previewStyles}
-              suppressHydrationWarning
-              data-testid="cv-preview"
-            >
-              {isMounted ? (
-                <ReactMarkdown>{markdownContent}</ReactMarkdown>
-              ) : (
-                <div className="text-muted-foreground">Loading preview...</div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Mobile: Tabs */}
-      <div className="lg:hidden">
-        <Tabs defaultValue="editor" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="editor">Editor</TabsTrigger>
-            <TabsTrigger value="preview">Preview</TabsTrigger>
-          </TabsList>
-          <TabsContent value="editor" className="mt-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="mb-2 text-sm font-medium text-muted-foreground">
-                  Markdown
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="border-b bg-white shrink-0">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex-1">
+                  <h1 className="text-2xl sm:text-3xl font-bold">
+                    {isEditing ? "CV Editor" : "CV Preview"}
+                  </h1>
+                  <p className="text-muted-foreground mt-2">
+                    Tailored for {cv.jobDescription.title}
+                    {cv.jobDescription.company && ` at ${cv.jobDescription.company}`}
+                  </p>
                 </div>
-                <textarea
-                  value={markdownContent}
-                  onChange={(e) => handleMarkdownChange(e.target.value)}
-                  className="w-full h-96 p-4 border rounded-md font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="Enter your CV markdown here..."
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="preview" className="mt-4">
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <div className="mb-2 text-sm font-medium text-muted-foreground">
-                  Preview
-                </div>
-                <div 
-                  className="markdown-preview cv-preview" 
-                  style={previewStyles}
-                  suppressHydrationWarning
-                >
-                  {isMounted ? (
-                    <ReactMarkdown>{markdownContent}</ReactMarkdown>
-                  ) : (
-                    <div className="text-muted-foreground">Loading preview...</div>
+                <div className="flex gap-2 items-center w-full sm:w-auto">
+                  {isEditing && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {getSaveStatusIcon()}
+                      <span>{getSaveStatusText()}</span>
+                    </div>
                   )}
+                  <Button
+                    onClick={handleEditToggle}
+                    variant={isEditing ? "outline" : "default"}
+                    className="w-full sm:w-auto"
+                  >
+                    {isEditing ? (
+                      <>
+                        <Eye className="h-4 w-4 mr-2" />
+                        View
+                      </>
+                    ) : (
+                      <>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={handleDownloadPDF}
+                    variant="default"
+                    className="w-full sm:w-auto"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download PDF
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+              </div>
+            </div>
+          </div>
 
-      {/* Editor Controls */}
-      <CVEditorControls
-        settings={editorSettings}
-        onSettingsChange={handleSettingsChange}
-        onReset={handleResetSettings}
-        isOpen={showSettings}
-        onToggle={() => setShowSettings(!showSettings)}
-      />
-    </div>
+          {/* CV Preview */}
+          <div className="flex-1 overflow-y-auto bg-gray-50">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <Card>
+                <CardContent className="p-6 sm:p-8 lg:p-12 print:p-0">
+                  <CvLayout>
+                    <CvHeader header={cvData.header} />
+
+                    {cvData.summary && (
+                      <CvSection title="Summary" sectionKey="summary">
+                        <p style={{ lineHeight: "1.6" }}>{cvData.summary}</p>
+                      </CvSection>
+                    )}
+
+                    {cvData.experiences && cvData.experiences.length > 0 && (
+                      <CvSection title="Professional Experience" sectionKey="experience">
+                        {cvData.experiences.map((experience) => (
+                          <ExperienceItem
+                            key={experience.experienceId}
+                            experience={experience}
+                          />
+                        ))}
+                      </CvSection>
+                    )}
+
+                    {cvData.skillGroups && cvData.skillGroups.length > 0 && (
+                      <CvSection title="Technical Skills" sectionKey="skills">
+                        <SkillsSection skillGroups={cvData.skillGroups} />
+                      </CvSection>
+                    )}
+
+                    {cvData.education && cvData.education.length > 0 && (
+                      <CvSection title="Education" sectionKey="education">
+                        <div className="space-y-4 print:space-y-3">
+                          {cvData.education.map((edu, idx) => {
+                            const formatDate = (dateString: string) => {
+                              const date = new Date(dateString);
+                              return date.toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                              });
+                            };
+                            const dateRange =
+                              edu.current || !edu.endDate
+                                ? `${formatDate(edu.startDate)} — Present`
+                                : `${formatDate(edu.startDate)} — ${formatDate(edu.endDate)}`;
+
+                            return (
+                              <div key={idx} className="mb-4 print:mb-3">
+                                <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 mb-1">
+                                  <div>
+                                    <span className="font-semibold text-gray-900">
+                                      {edu.degree}
+                                    </span>
+                                    {edu.fieldOfStudy && (
+                                      <span className="text-gray-600">
+                                        {" "}
+                                        in {edu.fieldOfStudy}
+                                      </span>
+                                    )}
+                                    <span className="text-gray-600"> · {edu.institution}</span>
+                                  </div>
+                                  <span className="text-sm text-gray-500">{dateRange}</span>
+                                </div>
+                                {edu.description && (
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    {edu.description}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CvSection>
+                    )}
+
+                    {cvData.languages && cvData.languages.length > 0 && (
+                      <CvSection title="Languages" sectionKey="languages">
+                        <LanguageSection languages={cvData.languages} />
+                      </CvSection>
+                    )}
+                  </CvLayout>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+    </CVStyleProvider>
   );
 }
