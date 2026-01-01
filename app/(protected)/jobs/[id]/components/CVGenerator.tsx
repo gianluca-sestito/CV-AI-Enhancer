@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { FileText, Calendar, Sparkles, ExternalLink, Trash2 } from "lucide-react";
+import type { ProfileWithRelations, AnalysisResult } from "@/lib/types";
+import { logger } from "@/lib/utils/logger";
 
 interface JobDescription {
   id: string;
@@ -14,28 +16,7 @@ interface JobDescription {
   description: string;
 }
 
-interface AnalysisResult {
-  id: string;
-}
-
-interface Profile {
-  id: string;
-  firstName: string | null;
-  lastName: string | null;
-  email: string | null;
-  phone: string | null;
-  location: string | null;
-  address: string | null;
-  city: string | null;
-  country: string | null;
-  postalCode: string | null;
-  profileImageUrl: string | null;
-  personalSummary: string | null;
-  workExperiences: any[];
-  skills: any[];
-  education: any[];
-  languages: any[];
-}
+type Profile = ProfileWithRelations;
 
 interface GeneratedCV {
   id: string;
@@ -78,7 +59,7 @@ export default function CVGenerator({
       const data = await response.json();
       router.push(`/cv/${data.id}`);
     } catch (error) {
-      console.error("Error generating CV:", error);
+      logger.error("Error generating CV", error);
       alert("Failed to generate CV. Please try again.");
     } finally {
       setLoading(false);
@@ -105,7 +86,7 @@ export default function CVGenerator({
       // Refresh the page to update the CV list
       router.refresh();
     } catch (error) {
-      console.error("Error deleting CV:", error);
+      logger.error("Error deleting CV", error);
       alert(error instanceof Error ? error.message : "Failed to delete CV. Please try again.");
     } finally {
       setDeletingCVId(null);

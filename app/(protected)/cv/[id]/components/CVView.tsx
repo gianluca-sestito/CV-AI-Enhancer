@@ -1,20 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+import { logger } from "@/lib/utils/logger";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Download, Edit, Eye, Check, AlertCircle, Menu, X } from "lucide-react";
 import { useCVEditor } from "./useCVEditor";
 import { CVStyleProvider } from "./CVStyleProvider";
-import CVEditorSidebar from "./CVEditorSidebar";
-import CvLayout from "./CvLayout";
-import CvHeader from "./CvHeader";
-import CvSection from "./CvSection";
-import ExperienceItem from "./ExperienceItem";
-import SkillsSection from "./SkillsSection";
-import LanguageSection from "./LanguageSection";
+import CVContent from "./CVContent";
 import type { CVData } from "./types";
+import { Loading } from "@/components/ui/loading";
+
+// Lazy load the CV editor sidebar
+const CVEditorSidebar = dynamic(() => import("./CVEditorSidebar"), {
+  loading: () => <Loading text="Loading editor..." />,
+  ssr: false,
+});
 
 interface GeneratedCV {
   id: string;
@@ -42,39 +45,72 @@ export default function CVView({ cv: initialCV }: { cv: GeneratedCV }) {
     isDirty,
   } = useCVEditor(cv.id, initialCV.structuredContent || null);
 
-  // Poll for CV updates if processing
+  // Poll for CV updates if processing with exponential backoff
   useEffect(() => {
     if (cv.status === "processing") {
-      const interval = setInterval(async () => {
+      let attempt = 0;
+      const maxAttempts = 150; // ~5 minutes max (150 * 2s = 300s)
+      const baseDelay = 2000; // 2 seconds
+      const maxDelay = 30000; // 30 seconds max
+      const abortController = new AbortController();
+
+      const poll = async () => {
+        if (attempt >= maxAttempts) {
+          logger.warn("CV polling timeout", { cvId: cv.id, attempts: attempt });
+          setLoading(false);
+          return;
+        }
+
         try {
-          const response = await fetch(`/api/cv/${cv.id}`);
+          const response = await fetch(`/api/cv/${cv.id}`, {
+            signal: abortController.signal,
+          });
+
           if (response.ok) {
             const data = await response.json();
             setCV(data);
             if (data.status === "completed" || data.status === "failed") {
               setLoading(false);
-              clearInterval(interval);
+              return;
             }
           }
-        } catch (error) {
-          console.error("Error fetching CV:", error);
-        }
-      }, 2000);
 
-      return () => clearInterval(interval);
+          // Calculate exponential backoff: 2s, 4s, 8s, 16s, 30s (max)
+          const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+          attempt++;
+          setTimeout(poll, delay);
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") {
+            return; // Component unmounted, stop polling
+          }
+          logger.error("Error fetching CV", error, { cvId: cv.id, attempt });
+          
+          // Continue polling on error with backoff
+          const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+          attempt++;
+          setTimeout(poll, delay);
+        }
+      };
+
+      // Start polling
+      poll();
+
+      return () => {
+        abortController.abort();
+      };
     }
   }, [cv.id, cv.status]);
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = useCallback(() => {
     window.open(`/api/cv/${cv.id}/pdf`, "_blank");
-  };
+  }, [cv.id]);
 
-  const handleEditToggle = () => {
+  const handleEditToggle = useCallback(() => {
     toggleEdit();
-    setSidebarOpen(!sidebarOpen);
-  };
+    setSidebarOpen((prev) => !prev);
+  }, [toggleEdit]);
 
-  const getSaveStatusIcon = () => {
+  const getSaveStatusIcon = useCallback(() => {
     switch (saveStatus) {
       case "saving":
         return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
@@ -85,9 +121,9 @@ export default function CVView({ cv: initialCV }: { cv: GeneratedCV }) {
       default:
         return null;
     }
-  };
+  }, [saveStatus]);
 
-  const getSaveStatusText = () => {
+  const getSaveStatusText = useCallback(() => {
     switch (saveStatus) {
       case "saving":
         return "Saving...";
@@ -98,7 +134,7 @@ export default function CVView({ cv: initialCV }: { cv: GeneratedCV }) {
       default:
         return isDirty ? "Unsaved changes" : "";
     }
-  };
+  }, [saveStatus, isDirty]);
 
   if (loading) {
     return (
@@ -178,7 +214,7 @@ export default function CVView({ cv: initialCV }: { cv: GeneratedCV }) {
                 </div>
                 <div className="flex gap-2 items-center w-full sm:w-auto">
                   {isEditing && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground" role="status" aria-live="polite">
                       {getSaveStatusIcon()}
                       <span>{getSaveStatusText()}</span>
                     </div>
@@ -218,83 +254,7 @@ export default function CVView({ cv: initialCV }: { cv: GeneratedCV }) {
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <Card>
                 <CardContent className="p-6 sm:p-8 lg:p-12 print:p-0">
-                  <CvLayout>
-                    <CvHeader header={cvData.header} />
-
-                    {cvData.summary && (
-                      <CvSection title="Summary" sectionKey="summary">
-                        <p style={{ lineHeight: "1.6" }}>{cvData.summary}</p>
-                      </CvSection>
-                    )}
-
-                    {cvData.experiences && cvData.experiences.length > 0 && (
-                      <CvSection title="Professional Experience" sectionKey="experience">
-                        {cvData.experiences.map((experience) => (
-                          <ExperienceItem
-                            key={experience.experienceId}
-                            experience={experience}
-                          />
-                        ))}
-                      </CvSection>
-                    )}
-
-                    {cvData.skillGroups && cvData.skillGroups.length > 0 && (
-                      <CvSection title="Technical Skills" sectionKey="skills">
-                        <SkillsSection skillGroups={cvData.skillGroups} />
-                      </CvSection>
-                    )}
-
-                    {cvData.education && cvData.education.length > 0 && (
-                      <CvSection title="Education" sectionKey="education">
-                        <div className="space-y-4 print:space-y-3">
-                          {cvData.education.map((edu, idx) => {
-                            const formatDate = (dateString: string) => {
-                              const date = new Date(dateString);
-                              return date.toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "short",
-                              });
-                            };
-                            const dateRange =
-                              edu.current || !edu.endDate
-                                ? `${formatDate(edu.startDate)} — Present`
-                                : `${formatDate(edu.startDate)} — ${formatDate(edu.endDate)}`;
-
-                            return (
-                              <div key={idx} className="mb-4 print:mb-3">
-                                <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 mb-1">
-                                  <div>
-                                    <span className="font-semibold text-gray-900">
-                                      {edu.degree}
-                                    </span>
-                                    {edu.fieldOfStudy && (
-                                      <span className="text-gray-600">
-                                        {" "}
-                                        in {edu.fieldOfStudy}
-                                      </span>
-                                    )}
-                                    <span className="text-gray-600"> · {edu.institution}</span>
-                                  </div>
-                                  <span className="text-sm text-gray-500">{dateRange}</span>
-                                </div>
-                                {edu.description && (
-                                  <p className="text-sm text-gray-600 mt-1">
-                                    {edu.description}
-                                  </p>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </CvSection>
-                    )}
-
-                    {cvData.languages && cvData.languages.length > 0 && (
-                      <CvSection title="Languages" sectionKey="languages">
-                        <LanguageSection languages={cvData.languages} />
-                      </CvSection>
-                    )}
-                  </CvLayout>
+                  <CVContent cvData={cvData} />
                 </CardContent>
               </Card>
             </div>

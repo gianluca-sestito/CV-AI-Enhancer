@@ -43,8 +43,9 @@ export default function RegisterForm() {
 
       router.push("/profile");
       router.refresh();
-    } catch (error: any) {
-      setError(error.message || "An error occurred");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An error occurred";
+      setError(message);
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { useCVStyleContext } from "./CVStyleProvider";
 import type { Language } from "./types";
 
@@ -7,7 +8,7 @@ interface LanguageSectionProps {
   languages: Language[];
 }
 
-export default function LanguageSection({
+function LanguageSection({
   languages,
 }: LanguageSectionProps) {
   const { styles } = useCVStyleContext();
@@ -35,4 +36,4 @@ export default function LanguageSection({
   );
 }
 
-
+export default memo(LanguageSection);

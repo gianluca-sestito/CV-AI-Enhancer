@@ -1,5 +1,7 @@
 "use client";
 
+import { logger } from "@/lib/utils/logger";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,7 +47,7 @@ export default function PersonalSummaryForm({ profile }: { profile: Profile }) {
 
       router.refresh();
     } catch (error) {
-      console.error("Error updating profile:", error);
+      logger.error("Error updating profile", error);
     } finally {
       setLoading(false);
     }

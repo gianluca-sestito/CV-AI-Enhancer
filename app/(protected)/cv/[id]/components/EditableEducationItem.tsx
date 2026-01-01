@@ -31,7 +31,7 @@ export default function EditableEducationItem({
     return date.toISOString().split("T")[0];
   };
 
-  const handleFieldChange = (field: keyof Education, value: any) => {
+  const handleFieldChange = (field: keyof Education, value: string | boolean | null) => {
     onChange({
       ...education,
       [field]: value,

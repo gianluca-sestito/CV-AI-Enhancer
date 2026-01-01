@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { useCVStyleContext } from "./CVStyleProvider";
 import type { SkillGroup } from "./types";
 
@@ -7,7 +8,7 @@ interface SkillsSectionProps {
   skillGroups: SkillGroup[];
 }
 
-export default function SkillsSection({ skillGroups }: SkillsSectionProps) {
+function SkillsSection({ skillGroups }: SkillsSectionProps) {
   const { styles } = useCVStyleContext();
   const sectionStyles = styles.sections.skills;
 
@@ -50,4 +51,4 @@ export default function SkillsSection({ skillGroups }: SkillsSectionProps) {
   );
 }
 
-
+export default memo(SkillsSection);

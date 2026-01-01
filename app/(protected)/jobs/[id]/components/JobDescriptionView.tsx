@@ -1,5 +1,7 @@
 "use client";
 
+import { logger } from "@/lib/utils/logger";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,7 +84,7 @@ export default function JobDescriptionView({
       setIsEditing(false);
       router.refresh();
     } catch (error) {
-      console.error("Error updating job description:", error);
+      logger.error("Error updating job description", error);
       alert("Failed to update job description");
     } finally {
       setLoading(false);
@@ -101,7 +103,7 @@ export default function JobDescriptionView({
       router.push("/jobs");
       router.refresh();
     } catch (error) {
-      console.error("Error deleting job description:", error);
+      logger.error("Error deleting job description", error);
       alert("Failed to delete job description");
       setIsDeleting(false);
     }

@@ -32,7 +32,7 @@ export default function EditableExperienceItem({
     return date.toISOString().split("T")[0];
   };
 
-  const handleFieldChange = (field: keyof Experience, value: any) => {
+  const handleFieldChange = (field: keyof Experience, value: string | boolean | string[] | null) => {
     onChange({
       ...experience,
       [field]: value,

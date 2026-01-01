@@ -2,6 +2,7 @@ import { requireAuth } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma/client";
 import { notFound } from "next/navigation";
 import CVView from "./components/CVView";
+import type { CVData } from "./components/types";
 
 export default async function CVPage({
   params,
@@ -22,6 +23,19 @@ export default async function CVPage({
     notFound();
   }
 
-  return <CVView cv={cv} />;
+  // Parse structuredContent from JsonValue to CVData | null
+  const structuredContent: CVData | null = 
+    cv.structuredContent && typeof cv.structuredContent === "object" && !Array.isArray(cv.structuredContent)
+      ? (cv.structuredContent as unknown as CVData)
+      : null;
+
+  return (
+    <CVView
+      cv={{
+        ...cv,
+        structuredContent,
+      }}
+    />
+  );
 }
 

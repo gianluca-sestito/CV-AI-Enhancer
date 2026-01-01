@@ -6,9 +6,11 @@ import chromium from "@sparticuz/chromium";
 import puppeteer from "puppeteer-core";
 import { execSync } from "child_process";
 import { existsSync } from "fs";
+import type { CVData, CVStyles } from "@/lib/types/cv";
+import { logger } from "@/lib/utils/logger";
 
 // Default styles matching the frontend
-const defaultStyles = {
+const defaultStyles: CVStyles = {
   global: {
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
     baseFontSize: "11pt",
@@ -42,7 +44,7 @@ const defaultStyles = {
       color: "#111827",
       marginTop: "32px",
       marginBottom: "16px",
-      paddingBottom: "8px",
+      padding: "0 0 8px 0",
     },
     h3: {
       fontSize: "16pt",
@@ -70,7 +72,10 @@ const defaultStyles = {
 };
 
 // Helper function to convert structured CV content to HTML with styles
-function convertStructuredContentToHTML(data: any, styles: any = defaultStyles): string {
+function convertStructuredContentToHTML(
+  data: CVData,
+  styles: CVStyles = defaultStyles
+): string {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -137,7 +142,8 @@ function convertStructuredContentToHTML(data: any, styles: any = defaultStyles):
     const summaryMarginBottom = summarySectionStyles.marginBottom || styles.global.sectionSpacing;
     const summaryColor = summarySectionStyles.color || pStyles.color || styles.global.textColor;
 
-    html += `<h2 style="font-size: ${h2Styles.fontSize}; font-weight: ${h2Styles.fontWeight}; color: ${h2Styles.color || styles.global.textColor}; margin-top: ${summaryMarginTop}; margin-bottom: ${h2Styles.marginBottom || "16px"}; padding-bottom: ${h2Styles.paddingBottom || "8px"}; border-bottom: 1px solid ${styles.global.borderColor};">Summary</h2>`;
+    const h2Padding = h2Styles.padding || "0 0 8px 0";
+    html += `<h2 style="font-size: ${h2Styles.fontSize}; font-weight: ${h2Styles.fontWeight}; color: ${h2Styles.color || styles.global.textColor}; margin-top: ${summaryMarginTop}; margin-bottom: ${h2Styles.marginBottom || "16px"}; padding: ${h2Padding}; border-bottom: 1px solid ${styles.global.borderColor};">Summary</h2>`;
     html += `<p style="font-size: ${pStyles.fontSize}; line-height: ${pStyles.lineHeight || styles.global.lineHeight}; color: ${summaryColor}; margin-bottom: ${summaryMarginBottom};">${escapeHtml(data.summary)}</p>`;
   }
 
@@ -146,8 +152,9 @@ function convertStructuredContentToHTML(data: any, styles: any = defaultStyles):
     const expMarginTop = experienceSectionStyles.marginTop || h2Styles.marginTop || "32px";
     const expColor = experienceSectionStyles.color || styles.global.textColor;
 
-    html += `<h2 style="font-size: ${h2Styles.fontSize}; font-weight: ${h2Styles.fontWeight}; color: ${h2Styles.color || styles.global.textColor}; margin-top: ${expMarginTop}; margin-bottom: ${h2Styles.marginBottom || "16px"}; padding-bottom: ${h2Styles.paddingBottom || "8px"}; border-bottom: 1px solid ${styles.global.borderColor};">Professional Experience</h2>`;
-    data.experiences.forEach((exp: any) => {
+    const expH2Padding = h2Styles.padding || "0 0 8px 0";
+    html += `<h2 style="font-size: ${h2Styles.fontSize}; font-weight: ${h2Styles.fontWeight}; color: ${h2Styles.color || styles.global.textColor}; margin-top: ${expMarginTop}; margin-bottom: ${h2Styles.marginBottom || "16px"}; padding: ${expH2Padding}; border-bottom: 1px solid ${styles.global.borderColor};">Professional Experience</h2>`;
+    data.experiences.forEach((exp) => {
       const dateRange =
         exp.current || !exp.endDate
           ? `${formatDate(exp.startDate)} — Present`
@@ -185,9 +192,10 @@ function convertStructuredContentToHTML(data: any, styles: any = defaultStyles):
     const skillsMarginBottom = skillsSectionStyles.marginBottom || styles.global.sectionSpacing;
     const skillsColor = skillsSectionStyles.color || styles.global.textColor;
 
-    html += `<h2 style="font-size: ${h2Styles.fontSize}; font-weight: ${h2Styles.fontWeight}; color: ${h2Styles.color || styles.global.textColor}; margin-top: ${skillsMarginTop}; margin-bottom: ${h2Styles.marginBottom || "16px"}; padding-bottom: ${h2Styles.paddingBottom || "8px"}; border-bottom: 1px solid ${styles.global.borderColor};">Technical Skills</h2>`;
+    const skillsH2Padding = h2Styles.padding || "0 0 8px 0";
+    html += `<h2 style="font-size: ${h2Styles.fontSize}; font-weight: ${h2Styles.fontWeight}; color: ${h2Styles.color || styles.global.textColor}; margin-top: ${skillsMarginTop}; margin-bottom: ${h2Styles.marginBottom || "16px"}; padding: ${skillsH2Padding}; border-bottom: 1px solid ${styles.global.borderColor};">Technical Skills</h2>`;
     html += `<div style="margin-bottom: ${skillsMarginBottom};">`;
-    data.skillGroups.forEach((group: any) => {
+    data.skillGroups.forEach((group) => {
       html += `<div style="margin-bottom: 16px;">`;
       html += `<h3 style="font-size: ${h3Styles.fontSize}; font-weight: ${h3Styles.fontWeight}; color: ${h3Styles.color || skillsColor || styles.global.textColor}; margin-bottom: ${h3Styles.marginBottom || "8px"};">${escapeHtml(group.category)}</h3>`;
       html += `<div style="display: flex; flex-wrap: wrap; gap: 8px;">`;
@@ -207,9 +215,10 @@ function convertStructuredContentToHTML(data: any, styles: any = defaultStyles):
     const eduMarginBottom = educationSectionStyles.marginBottom || styles.global.sectionSpacing;
     const eduColor = educationSectionStyles.color || styles.global.textColor;
 
-    html += `<h2 style="font-size: ${h2Styles.fontSize}; font-weight: ${h2Styles.fontWeight}; color: ${h2Styles.color || styles.global.textColor}; margin-top: ${eduMarginTop}; margin-bottom: ${h2Styles.marginBottom || "16px"}; padding-bottom: ${h2Styles.paddingBottom || "8px"}; border-bottom: 1px solid ${styles.global.borderColor};">Education</h2>`;
+    const eduH2Padding = h2Styles.padding || "0 0 8px 0";
+    html += `<h2 style="font-size: ${h2Styles.fontSize}; font-weight: ${h2Styles.fontWeight}; color: ${h2Styles.color || styles.global.textColor}; margin-top: ${eduMarginTop}; margin-bottom: ${h2Styles.marginBottom || "16px"}; padding: ${eduH2Padding}; border-bottom: 1px solid ${styles.global.borderColor};">Education</h2>`;
     html += `<div style="margin-bottom: ${eduMarginBottom};">`;
-    data.education.forEach((edu: any) => {
+    data.education.forEach((edu) => {
       const dateRange =
         edu.current || !edu.endDate
           ? `${formatDate(edu.startDate)} — Present`
@@ -238,9 +247,10 @@ function convertStructuredContentToHTML(data: any, styles: any = defaultStyles):
     const langMarginBottom = languagesSectionStyles.marginBottom || styles.global.sectionSpacing;
     const langColor = languagesSectionStyles.color || pStyles.color || styles.global.textColor;
 
-    html += `<h2 style="font-size: ${h2Styles.fontSize}; font-weight: ${h2Styles.fontWeight}; color: ${h2Styles.color || styles.global.textColor}; margin-top: ${langMarginTop}; margin-bottom: ${h2Styles.marginBottom || "16px"}; padding-bottom: ${h2Styles.paddingBottom || "8px"}; border-bottom: 1px solid ${styles.global.borderColor};">Languages</h2>`;
+    const langH2Padding = h2Styles.padding || "0 0 8px 0";
+    html += `<h2 style="font-size: ${h2Styles.fontSize}; font-weight: ${h2Styles.fontWeight}; color: ${h2Styles.color || styles.global.textColor}; margin-top: ${langMarginTop}; margin-bottom: ${h2Styles.marginBottom || "16px"}; padding: ${langH2Padding}; border-bottom: 1px solid ${styles.global.borderColor};">Languages</h2>`;
     html += `<div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: ${langMarginBottom};">`;
-    data.languages.forEach((lang: any) => {
+    data.languages.forEach((lang) => {
       html += `<div style="color: ${langColor};">`;
       html += `<span style="font-weight: 500;">${escapeHtml(lang.name)}</span>`;
       html += `<span style="color: ${styles.global.secondaryColor};"> — ${escapeHtml(lang.proficiencyLevel)}</span>`;
@@ -264,24 +274,24 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 
-function mergeStyles(defaults: any, overrides: any): any {
+function mergeStyles(defaults: CVStyles, overrides: Partial<CVStyles>): CVStyles {
   return {
-    global: { ...defaults.global, ...overrides.global },
+    global: { ...defaults.global, ...(overrides.global || {}) },
     sections: {
-      header: { ...defaults.sections.header, ...overrides.sections?.header },
-      summary: { ...defaults.sections.summary, ...overrides.sections?.summary },
-      experience: { ...defaults.sections.experience, ...overrides.sections?.experience },
-      skills: { ...defaults.sections.skills, ...overrides.sections?.skills },
-      education: { ...defaults.sections.education, ...overrides.sections?.education },
-      languages: { ...defaults.sections.languages, ...overrides.sections?.languages },
+      header: { ...defaults.sections.header, ...(overrides.sections?.header || {}) },
+      summary: { ...defaults.sections.summary, ...(overrides.sections?.summary || {}) },
+      experience: { ...defaults.sections.experience, ...(overrides.sections?.experience || {}) },
+      skills: { ...defaults.sections.skills, ...(overrides.sections?.skills || {}) },
+      education: { ...defaults.sections.education, ...(overrides.sections?.education || {}) },
+      languages: { ...defaults.sections.languages, ...(overrides.sections?.languages || {}) },
     },
     elements: {
-      h1: { ...defaults.elements.h1, ...overrides.elements?.h1 },
-      h2: { ...defaults.elements.h2, ...overrides.elements?.h2 },
-      h3: { ...defaults.elements.h3, ...overrides.elements?.h3 },
-      p: { ...defaults.elements.p, ...overrides.elements?.p },
-      badge: { ...defaults.elements.badge, ...overrides.elements?.badge },
-      listItem: { ...defaults.elements.listItem, ...overrides.elements?.listItem },
+      h1: { ...defaults.elements.h1, ...(overrides.elements?.h1 || {}) },
+      h2: { ...defaults.elements.h2, ...(overrides.elements?.h2 || {}) },
+      h3: { ...defaults.elements.h3, ...(overrides.elements?.h3 || {}) },
+      p: { ...defaults.elements.p, ...(overrides.elements?.p || {}) },
+      badge: { ...defaults.elements.badge, ...(overrides.elements?.badge || {}) },
+      listItem: { ...defaults.elements.listItem, ...(overrides.elements?.listItem || {}) },
     },
   };
 }
@@ -319,7 +329,7 @@ export async function GET(
     }
 
     // Check for structured content (new format) or markdown content (legacy)
-    const structuredContent = cv.structuredContent as any;
+    const structuredContent = cv.structuredContent as CVData | null;
     const markdownContent = cv.markdownContent;
 
     if (!structuredContent && !markdownContent) {
@@ -338,10 +348,10 @@ export async function GET(
       
       if (cv.styles) {
         try {
-          const storedStyles = cv.styles as any;
-          cvStyles = mergeStyles(defaultStyles, storedStyles);
+          const storedStyles = cv.styles as Partial<CVStyles>;
+          cvStyles = mergeStyles(defaultStyles, storedStyles) as CVStyles;
         } catch (error) {
-          console.error("Error parsing styles from database:", error);
+          logger.error("Error parsing styles from database", error);
           // Fall back to default styles if parsing fails
         }
       }
@@ -666,7 +676,7 @@ export async function GET(
     }
 
     const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    console.error("PDF generation error:", error);
+    logger.error("PDF generation error", error);
     
     return NextResponse.json(
       { 

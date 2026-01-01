@@ -1,3 +1,5 @@
+import { logger } from "@/lib/utils/logger";
+
 export interface CVEditorSettings {
   fontFamily: 'serif' | 'sans-serif' | 'mixed';
   colorScheme: 'warm' | 'cool' | 'minimal' | 'custom';
@@ -32,7 +34,7 @@ export function loadSettings(cvId: string): CVEditorSettings {
       return { ...defaultSettings, ...parsed };
     }
   } catch (error) {
-    console.error('Error loading settings:', error);
+    logger.error('Error loading settings', error, { cvId });
   }
   
   return defaultSettings;
@@ -44,7 +46,7 @@ export function saveSettings(cvId: string, settings: CVEditorSettings): void {
   try {
     localStorage.setItem(`${STORAGE_KEY_PREFIX}${cvId}`, JSON.stringify(settings));
   } catch (error) {
-    console.error('Error saving settings:', error);
+    logger.error('Error saving settings', error, { cvId });
   }
 }
 

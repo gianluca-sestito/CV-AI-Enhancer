@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma/client";
 import { z } from "zod";
+import { logger } from "@/lib/utils/logger";
 
 // Schema for styles validation (matches CVStyles type)
 const elementStylesSchema = z.object({
@@ -100,7 +101,7 @@ export async function PUT(
       message: "Styles saved successfully",
     });
   } catch (error: unknown) {
-    console.error("Error saving styles:", error);
+    logger.error("Error saving styles", error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -155,7 +156,7 @@ export async function GET(
       styles: cv.styles || null,
     });
   } catch (error: unknown) {
-    console.error("Error fetching styles:", error);
+    logger.error("Error fetching styles", error);
 
     const errorMessage =
       error instanceof Error ? error.message : "Internal server error";

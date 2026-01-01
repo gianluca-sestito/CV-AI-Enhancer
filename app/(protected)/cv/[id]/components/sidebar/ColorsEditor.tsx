@@ -3,6 +3,7 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useCVStyleContext } from "../CVStyleProvider";
+import type { CVStyles } from "../types";
 
 export default function ColorsEditor() {
   const { styles, updateGlobalStyle, updateSectionStyle, updateElementStyle } =
@@ -181,57 +182,60 @@ export default function ColorsEditor() {
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-gray-900">Section Colors</h3>
         <div className="space-y-3">
-          {Object.entries(styles.sections).map(([sectionKey, sectionStyles]) => (
-            <div key={sectionKey} className="border border-gray-200 rounded p-3 space-y-2">
-              <Label className="text-xs font-medium capitalize">{sectionKey}</Label>
-              <div className="space-y-2">
-                <div>
-                  <Label className="text-xs">Text Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="color"
-                      value={sectionStyles.color || styles.global.textColor}
-                      onChange={(e) =>
-                        updateSectionStyle(sectionKey as any, "color", e.target.value)
-                      }
-                      className="w-12 h-8"
-                    />
-                    <Input
-                      type="text"
-                      value={sectionStyles.color || ""}
-                      onChange={(e) =>
-                        updateSectionStyle(sectionKey as any, "color", e.target.value)
-                      }
-                      placeholder="Inherit"
-                      className="flex-1 text-xs"
-                    />
+          {(Object.keys(styles.sections) as Array<keyof CVStyles["sections"]>).map((sectionKey) => {
+            const sectionStyles = styles.sections[sectionKey];
+            return (
+              <div key={sectionKey} className="border border-gray-200 rounded p-3 space-y-2">
+                <Label className="text-xs font-medium capitalize">{sectionKey}</Label>
+                <div className="space-y-2">
+                  <div>
+                    <Label className="text-xs">Text Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={sectionStyles.color || styles.global.textColor}
+                        onChange={(e) =>
+                          updateSectionStyle(sectionKey, "color", e.target.value)
+                        }
+                        className="w-12 h-8"
+                      />
+                      <Input
+                        type="text"
+                        value={sectionStyles.color || ""}
+                        onChange={(e) =>
+                          updateSectionStyle(sectionKey, "color", e.target.value)
+                        }
+                        placeholder="Inherit"
+                        className="flex-1 text-xs"
+                      />
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <Label className="text-xs">Background Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="color"
-                      value={sectionStyles.backgroundColor || styles.global.backgroundColor}
-                      onChange={(e) =>
-                        updateSectionStyle(sectionKey as any, "backgroundColor", e.target.value)
-                      }
-                      className="w-12 h-8"
-                    />
-                    <Input
-                      type="text"
-                      value={sectionStyles.backgroundColor || ""}
-                      onChange={(e) =>
-                        updateSectionStyle(sectionKey as any, "backgroundColor", e.target.value)
-                      }
-                      placeholder="Inherit"
-                      className="flex-1 text-xs"
-                    />
+                  <div>
+                    <Label className="text-xs">Background Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={sectionStyles.backgroundColor || styles.global.backgroundColor}
+                        onChange={(e) =>
+                          updateSectionStyle(sectionKey, "backgroundColor", e.target.value)
+                        }
+                        className="w-12 h-8"
+                      />
+                      <Input
+                        type="text"
+                        value={sectionStyles.backgroundColor || ""}
+                        onChange={(e) =>
+                          updateSectionStyle(sectionKey, "backgroundColor", e.target.value)
+                        }
+                        placeholder="Inherit"
+                        className="flex-1 text-xs"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

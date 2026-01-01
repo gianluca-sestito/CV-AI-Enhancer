@@ -27,7 +27,7 @@ export default async function JobsPage() {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
       {/* Enhanced Header */}
-      <div className="mb-8 pb-6 border-b border-border/50">
+      <header className="mb-8 pb-6 border-b border-border/50">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex-1">
             <h1 className="text-3xl lg:text-4xl font-bold mb-2">Job Descriptions</h1>
@@ -35,7 +35,7 @@ export default async function JobsPage() {
               Manage job descriptions and view analysis results
             </p>
             {jobs.length > 0 && (
-              <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground" role="status" aria-live="polite">
                 <span>{jobs.length} {jobs.length === 1 ? 'job' : 'jobs'}</span>
                 {analyzedJobsCount > 0 && (
                   <span>• {analyzedJobsCount} analyzed</span>
@@ -44,13 +44,13 @@ export default async function JobsPage() {
             )}
           </div>
           <Link href="/jobs/new" className="w-full sm:w-auto">
-            <Button className="w-full sm:w-auto" size="lg">
-              <Plus className="h-4 w-4 mr-2" />
+            <Button className="w-full sm:w-auto" size="lg" aria-label="Add new job description">
+              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               Add Job Description
             </Button>
           </Link>
         </div>
-      </div>
+      </header>
 
       {/* Content */}
       {jobs.length === 0 ? (

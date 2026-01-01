@@ -1,5 +1,7 @@
 "use client";
 
+import { logger } from "@/lib/utils/logger";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -110,7 +112,7 @@ export default function LanguagesForm({
       router.refresh();
       setIsEditMode(false);
     } catch (error) {
-      console.error("Error updating languages:", error);
+      logger.error("Error updating languages", error);
       alert("Failed to update languages");
     } finally {
       setLoading(false);

@@ -1,3 +1,5 @@
+import { logger } from "@/lib/utils/logger";
+
 export type ThemeName = "modern" | "classic" | "minimal" | "professional";
 
 export interface Theme {
@@ -135,7 +137,7 @@ export function loadTheme(cvId: string): ThemeName {
       return stored as ThemeName;
     }
   } catch (error) {
-    console.error("Error loading theme:", error);
+    logger.error("Error loading theme", error);
   }
 
   return "modern";
@@ -147,7 +149,7 @@ export function saveTheme(cvId: string, theme: ThemeName): void {
   try {
     localStorage.setItem(`${STORAGE_KEY_PREFIX}${cvId}`, theme);
   } catch (error) {
-    console.error("Error saving theme:", error);
+    logger.error("Error saving theme", error);
   }
 }
 

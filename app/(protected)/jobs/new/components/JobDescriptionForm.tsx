@@ -1,5 +1,7 @@
 "use client";
 
+import { logger } from "@/lib/utils/logger";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +37,7 @@ export default function JobDescriptionForm() {
       const data = await response.json();
       router.push(`/jobs/${data.id}`);
     } catch (error) {
-      console.error("Error creating job description:", error);
+      logger.error("Error creating job description", error);
     } finally {
       setLoading(false);
     }

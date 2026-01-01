@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
+import { logger } from "@/lib/utils/logger";
 
 interface WorkExperience {
   id: string;
@@ -59,7 +60,7 @@ export default function WorkExperienceForm({
     setItems(items.filter((item) => item.id !== id));
   };
 
-  const updateExperience = (id: string, field: keyof WorkExperience, value: any) => {
+  const updateExperience = (id: string, field: keyof WorkExperience, value: string | boolean | Date | null) => {
     setItems((prevItems) =>
       prevItems.map((item) =>
         item.id === id ? { ...item, [field]: value } : item
@@ -85,7 +86,7 @@ export default function WorkExperienceForm({
 
       router.refresh();
     } catch (error) {
-      console.error("Error updating work experiences:", error);
+      logger.error("Error updating work experiences", error);
     } finally {
       setLoading(false);
     }

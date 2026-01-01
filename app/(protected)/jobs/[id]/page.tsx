@@ -8,6 +8,8 @@ import JobDescriptionView from "./components/JobDescriptionView";
 import AnalysisResults from "./components/AnalysisResults";
 import CVGenerator from "./components/CVGenerator";
 import JobSidebarClient from "./components/JobSidebarClient";
+import { parseAnalysisResult } from "@/lib/utils/type-guards";
+import type { AnalysisResultData } from "@/lib/types/analysis";
 
 export default async function JobDetailPage({
   params,
@@ -88,17 +90,20 @@ export default async function JobDetailPage({
                   <AnalysisResults
                     analysis={{
                       ...latestAnalysis,
-                      strengths: (latestAnalysis.strengths as any) || [],
-                      gaps: (latestAnalysis.gaps as any) || [],
-                      missingSkills: (latestAnalysis.missingSkills as any) || [],
-                      suggestedFocusAreas: (latestAnalysis.suggestedFocusAreas as any) || [],
-                    } as any}
+                      ...parseAnalysisResult({
+                        strengths: latestAnalysis.strengths,
+                        gaps: latestAnalysis.gaps,
+                        missingSkills: latestAnalysis.missingSkills,
+                        suggestedFocusAreas: latestAnalysis.suggestedFocusAreas,
+                        jobRequirements: latestAnalysis.jobRequirements,
+                      }),
+                    } as AnalysisResultData & { id: string; matchScore: number; status: string }}
                     jobId={job.id}
                     profileId={profile.id}
                   />
                   <CVGenerator
                     job={job}
-                    analysis={latestAnalysis as any}
+                    analysis={latestAnalysis}
                     profile={profile}
                     existingCVs={job.generatedCVs}
                   />

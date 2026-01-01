@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import JobSidebar from "./JobSidebar";
+import { logger } from "@/lib/utils/logger";
 
 interface JobSidebarClientProps {
   job: {
@@ -50,7 +51,7 @@ export default function JobSidebarClient({
       if (!response.ok) throw new Error("Failed to start analysis");
       router.refresh();
     } catch (error) {
-      console.error("Error starting analysis:", error);
+      logger.error("Error starting analysis", error);
       alert("Failed to start analysis. Please try again.");
     } finally {
       setAnalyzing(false);
@@ -72,7 +73,7 @@ export default function JobSidebarClient({
       if (!response.ok) throw new Error("Failed to redo analysis");
       router.refresh();
     } catch (error) {
-      console.error("Error redoing analysis:", error);
+      logger.error("Error redoing analysis", error);
       alert("Failed to redo analysis. Please try again.");
     } finally {
       setAnalyzing(false);
@@ -98,7 +99,7 @@ export default function JobSidebarClient({
       const data = await response.json();
       router.push(`/cv/${data.id}`);
     } catch (error) {
-      console.error("Error generating CV:", error);
+      logger.error("Error generating CV", error);
       alert("Failed to generate CV. Please try again.");
     } finally {
       setGeneratingCV(false);

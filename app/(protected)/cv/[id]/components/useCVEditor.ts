@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import type { CVData } from "./types";
+import { logger } from "@/lib/utils/logger";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -66,7 +67,7 @@ export function useCVEditor(
         // Reset to idle after 2 seconds
         setTimeout(() => setSaveStatus("idle"), 2000);
       } catch (error) {
-        console.error("Error saving CV:", error);
+        logger.error("Error saving CV", error, { cvId });
         setSaveStatus("error");
         // Reset to idle after 3 seconds on error
         setTimeout(() => setSaveStatus("idle"), 3000);
@@ -120,7 +121,7 @@ export function useCVEditor(
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);
     } catch (error) {
-      console.error("Error saving CV:", error);
+      logger.error("Error saving CV", error, { cvId });
       setSaveStatus("error");
       setTimeout(() => setSaveStatus("idle"), 3000);
     }

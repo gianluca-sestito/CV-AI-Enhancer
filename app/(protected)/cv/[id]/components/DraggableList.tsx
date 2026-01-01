@@ -18,11 +18,21 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ReactNode } from "react";
+import type { DraggableAttributes } from "@dnd-kit/core";
+
+// Type for listeners from useSortable - inferred from the hook return type
+type SortableListeners = ReturnType<typeof useSortable>["listeners"];
 
 interface DraggableListProps<T> {
   items: T[];
   onReorder: (items: T[]) => void;
-  children: (item: T, index: number, attributes: any, listeners: any, isDragging: boolean) => ReactNode;
+  children: (
+    item: T,
+    index: number,
+    attributes: DraggableAttributes,
+    listeners: SortableListeners | undefined,
+    isDragging: boolean
+  ) => ReactNode;
   itemId: (item: T, index: number) => string;
 }
 
@@ -78,7 +88,13 @@ interface SortableItemProps<T> {
   id: string;
   item: T;
   index: number;
-  render: (item: T, index: number, attributes: any, listeners: any, isDragging: boolean) => ReactNode;
+  render: (
+    item: T,
+    index: number,
+    attributes: DraggableAttributes,
+    listeners: SortableListeners | undefined,
+    isDragging: boolean
+  ) => ReactNode;
 }
 
 function SortableItem<T>({ id, item, index, render }: SortableItemProps<T>) {

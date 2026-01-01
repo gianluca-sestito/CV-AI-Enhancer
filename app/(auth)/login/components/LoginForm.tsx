@@ -20,12 +20,26 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
+      // Validate environment variables are available
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        throw new Error("Supabase configuration is missing. Please check your environment variables.");
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Provide more user-friendly error messages
+        if (error.message.includes("Invalid login credentials")) {
+          throw new Error("Invalid email or password. Please try again.");
+        }
+        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+          throw new Error("Unable to connect to the server. Please check your internet connection and try again.");
+        }
+        throw error;
+      }
 
       // Verify session was created
       const { data: { session } } = await supabase.auth.getSession();
@@ -36,8 +50,19 @@ export default function LoginForm() {
 
       // Use window.location for a full page reload to ensure server sees the session
       window.location.href = "/profile";
-    } catch (error: any) {
-      setError(error.message || "An error occurred");
+    } catch (error) {
+      let message = "An error occurred";
+      
+      if (error instanceof Error) {
+        message = error.message;
+        
+        // Handle network errors more gracefully
+        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+          message = "Unable to connect to the server. Please check your internet connection and Supabase configuration.";
+        }
+      }
+      
+      setError(message);
       setLoading(false);
     }
   };

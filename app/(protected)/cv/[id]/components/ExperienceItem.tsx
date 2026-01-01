@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { useCVStyleContext } from "./CVStyleProvider";
 import type { Experience } from "./types";
 
@@ -7,7 +8,7 @@ interface ExperienceItemProps {
   experience: Experience;
 }
 
-export default function ExperienceItem({ experience }: ExperienceItemProps) {
+function ExperienceItem({ experience }: ExperienceItemProps) {
   const { styles } = useCVStyleContext();
   const sectionStyles = styles.sections.experience;
   const formatDate = (dateString: string) => {
@@ -76,4 +77,4 @@ export default function ExperienceItem({ experience }: ExperienceItemProps) {
   );
 }
 
-
+export default memo(ExperienceItem);

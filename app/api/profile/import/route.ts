@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/supabase/auth";
 import { triggerClient } from "@/lib/trigger/client";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { logger } from "@/lib/utils/logger";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     // Upload to Supabase Storage
     // Use profile-images bucket (should allow PDFs, but if it has MIME restrictions, we may need a separate bucket)
-    console.log("Uploading file to storage:", {
+    logger.info("Uploading file to storage", {
       fileName: file.name,
       fileType: acceptedType,
       storageFileName,
@@ -77,9 +78,8 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error("Upload error details:", {
+      logger.error("Upload error details", uploadError, {
         message: uploadError.message,
-        statusCode: uploadError.statusCode,
         error: uploadError,
         storageFileName,
         userId: user.id,
@@ -103,8 +103,7 @@ export async function POST(request: NextRequest) {
       // Check for permission errors
       if (
         uploadError.message?.includes("permission") ||
-        uploadError.message?.includes("policy") ||
-        uploadError.statusCode === 403
+        uploadError.message?.includes("policy")
       ) {
         return NextResponse.json(
           {
@@ -136,7 +135,6 @@ export async function POST(request: NextRequest) {
         {
           error: "Failed to upload file",
           details: uploadError.message || JSON.stringify(uploadError),
-          statusCode: uploadError.statusCode,
         },
         { status: 500 }
       );
@@ -150,7 +148,7 @@ export async function POST(request: NextRequest) {
     const fileUrl = urlData?.publicUrl;
     
     if (!fileUrl) {
-      console.error("Failed to get public URL:", { uploadData, urlData });
+      logger.error("Failed to get public URL", undefined, { uploadData, urlData });
       return NextResponse.json(
         {
           error: "Failed to generate file URL",
@@ -160,7 +158,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("File uploaded successfully:", {
+    logger.info("File uploaded successfully", {
       fileName: file.name,
       fileType: acceptedType,
       fileUrl,
@@ -184,7 +182,7 @@ export async function POST(request: NextRequest) {
       fileName: file.name,
     };
 
-    console.log("Triggering import task with payload:", {
+    logger.info("Triggering import task with payload", {
       ...taskPayload,
       fileContent: fileContent ? `${fileContent.length} chars` : undefined,
     });
@@ -197,7 +195,7 @@ export async function POST(request: NextRequest) {
       status: "processing",
     });
   } catch (error: unknown) {
-    console.error("Error importing CV:", error);
+    logger.error("Error importing CV", error);
 
     const errorMessage =
       error instanceof Error ? error.message : "Internal server error";

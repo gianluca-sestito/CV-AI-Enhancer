@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Sparkles } from "lucide-react";
+import type { ProfileWithRelations } from "@/lib/types";
+import { logger } from "@/lib/utils/logger";
 
 interface JobDescription {
   id: string;
@@ -12,24 +14,7 @@ interface JobDescription {
   description: string;
 }
 
-interface Profile {
-  id: string;
-  firstName: string | null;
-  lastName: string | null;
-  email: string | null;
-  phone: string | null;
-  location: string | null;
-  address: string | null;
-  city: string | null;
-  country: string | null;
-  postalCode: string | null;
-  profileImageUrl: string | null;
-  personalSummary: string | null;
-  workExperiences: any[];
-  skills: any[];
-  education: any[];
-  languages: any[];
-}
+type Profile = ProfileWithRelations;
 
 export default function AnalysisTrigger({
   job,
@@ -58,7 +43,7 @@ export default function AnalysisTrigger({
 
       router.refresh();
     } catch (error) {
-      console.error("Error starting analysis:", error);
+      logger.error("Error starting analysis", error);
       alert("Failed to start analysis. Please try again.");
     } finally {
       setLoading(false);

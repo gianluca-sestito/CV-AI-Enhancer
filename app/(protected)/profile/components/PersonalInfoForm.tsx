@@ -1,5 +1,7 @@
 "use client";
 
+import { logger } from "@/lib/utils/logger";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,7 +84,7 @@ export default function PersonalInfoForm({ profile }: { profile: Profile }) {
       setImageFile(null);
       router.refresh();
     } catch (error) {
-      console.error("Error uploading image:", error);
+      logger.error("Error uploading image", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to upload image";
       alert(`Failed to upload image: ${errorMessage}\n\nPlease check the Storage Setup guide in docs/STORAGE_SETUP.md`);
     } finally {
@@ -107,7 +109,7 @@ export default function PersonalInfoForm({ profile }: { profile: Profile }) {
       setImageFile(null);
       router.refresh();
     } catch (error) {
-      console.error("Error removing image:", error);
+      logger.error("Error removing image", error);
     }
   };
 
@@ -143,7 +145,7 @@ export default function PersonalInfoForm({ profile }: { profile: Profile }) {
 
       router.refresh();
     } catch (error) {
-      console.error("Error updating profile:", error);
+      logger.error("Error updating profile", error);
     } finally {
       setLoading(false);
     }

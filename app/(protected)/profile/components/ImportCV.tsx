@@ -1,5 +1,7 @@
 "use client";
 
+import { logger } from "@/lib/utils/logger";
+
 import { useState, useRef } from "react";
 import { Upload, FileText, Loader2, Check, AlertCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -121,7 +123,7 @@ export default function ImportCV() {
         router.refresh();
       }, 2000);
     } catch (error) {
-      console.error("Error importing CV:", error);
+      logger.error("Error importing CV", error);
       setStatus("error");
       setMessage(
         error instanceof Error ? error.message : "Failed to import CV. Please try again."

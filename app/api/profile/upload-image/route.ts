@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma/client";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { handleApiError } from "@/lib/utils/errors";
+import { logger } from "@/lib/utils/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,7 +38,7 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    console.log("Uploading file:", { fileName, filePath, size: file.size, type: file.type, userId: user.id });
+    logger.info("Uploading file", { fileName, filePath, size: file.size, type: file.type, userId: user.id });
 
     // Upload to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -47,9 +49,8 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error("Upload error details:", {
+      logger.error("Upload error details", uploadError, {
         message: uploadError.message,
-        statusCode: uploadError.statusCode,
         error: uploadError,
         filePath,
         userId: user.id,
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Check for permission errors
-      if (uploadError.message?.includes("permission") || uploadError.message?.includes("policy") || uploadError.statusCode === 403) {
+      if (uploadError.message?.includes("permission") || uploadError.message?.includes("policy") || uploadError.message?.includes("403") || uploadError.message?.includes("Forbidden")) {
         return NextResponse.json(
           { 
             error: "Permission denied. Check RLS policies for storage.objects",
@@ -81,7 +82,6 @@ export async function POST(request: NextRequest) {
         { 
           error: "Image upload failed",
           details: uploadError.message || JSON.stringify(uploadError),
-          statusCode: uploadError.statusCode
         },
         { status: 500 }
       );
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     const { data: urlData } = supabase.storage.from("profile-images").getPublicUrl(filePath);
     const publicUrl = urlData.publicUrl;
     
-    console.log("Upload successful:", { publicUrl, filePath });
+    logger.info("Upload successful", { publicUrl, filePath });
 
     // Update profile with image URL
     let profile = await prisma.profile.findUnique({
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
             await supabase.storage.from("profile-images").remove([oldPath]);
           }
         } catch (error) {
-          console.warn("Failed to delete old image:", error);
+          logger.warn("Failed to delete old image", { error });
           // Continue anyway
         }
       }
@@ -129,12 +129,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ url: publicUrl });
-  } catch (error: any) {
-    console.error("Error uploading image:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    logger.error("Error uploading image", error);
+    return handleApiError(error);
   }
 }
 

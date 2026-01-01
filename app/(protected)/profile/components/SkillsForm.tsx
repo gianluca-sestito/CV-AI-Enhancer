@@ -1,5 +1,7 @@
 "use client";
 
+import { logger } from "@/lib/utils/logger";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -169,7 +171,7 @@ export default function SkillsForm({
         setItems([...items, result.skill]);
         router.refresh();
       } catch (error) {
-        console.error("Error adding skill:", error);
+        logger.error("Error adding skill", error);
         alert(error instanceof Error ? error.message : "Failed to add skill");
         return; // Don't close dialog on error
       } finally {
@@ -205,7 +207,7 @@ export default function SkillsForm({
         );
         router.refresh();
       } catch (error) {
-        console.error("Error updating skill:", error);
+        logger.error("Error updating skill", error);
         alert(error instanceof Error ? error.message : "Failed to update skill");
         return; // Don't close dialog on error
       } finally {
@@ -240,7 +242,7 @@ export default function SkillsForm({
       router.refresh();
       setIsEditMode(false);
     } catch (error) {
-      console.error("Error updating skills:", error);
+      logger.error("Error updating skills", error);
       alert("Failed to update skills");
     } finally {
       setLoading(false);

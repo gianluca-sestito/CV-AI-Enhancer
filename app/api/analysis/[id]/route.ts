@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma/client";
+import { handleApiError } from "@/lib/utils/errors";
 
 export async function GET(
   request: NextRequest,
@@ -23,11 +24,8 @@ export async function GET(
     }
 
     return NextResponse.json(analysis);
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleApiError(error);
   }
 }
 

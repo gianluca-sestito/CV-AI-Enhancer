@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma/client";
+import { handleApiError } from "@/lib/utils/errors";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -24,7 +25,15 @@ export async function PUT(request: NextRequest) {
 
     // Create new education
     const created = await prisma.education.createMany({
-      data: education.map((edu: any, index: number) => ({
+      data: (education as Array<{
+        institution: string;
+        degree: string;
+        fieldOfStudy?: string | null;
+        startDate: string;
+        endDate?: string | null;
+        current?: boolean;
+        description?: string | null;
+      }>).map((edu, index) => ({
         profileId,
         institution: edu.institution,
         degree: edu.degree,
@@ -38,11 +47,8 @@ export async function PUT(request: NextRequest) {
     });
 
     return NextResponse.json({ success: true, count: created.count });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleApiError(error);
   }
 }
 

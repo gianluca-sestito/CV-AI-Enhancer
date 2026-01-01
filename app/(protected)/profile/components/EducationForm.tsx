@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
+import { logger } from "@/lib/utils/logger";
 
 interface Education {
   id: string;
@@ -53,7 +54,7 @@ export default function EducationForm({
     setItems(items.filter((item) => item.id !== id));
   };
 
-  const updateEducation = (id: string, field: keyof Education, value: any) => {
+  const updateEducation = (id: string, field: keyof Education, value: string | boolean | Date | null) => {
     setItems(
       items.map((item) =>
         item.id === id ? { ...item, [field]: value } : item
@@ -79,7 +80,7 @@ export default function EducationForm({
 
       router.refresh();
     } catch (error) {
-      console.error("Error updating education:", error);
+      logger.error("Error updating education", error);
     } finally {
       setLoading(false);
     }

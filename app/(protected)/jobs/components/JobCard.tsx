@@ -25,6 +25,7 @@ import {
   FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/utils/logger";
 
 interface JobCardProps {
   job: {
@@ -57,7 +58,7 @@ export default function JobCard({ job }: JobCardProps) {
 
       router.refresh();
     } catch (error) {
-      console.error("Error deleting job description:", error);
+      logger.error("Error deleting job description", error);
       alert("Failed to delete job description");
       setIsDeleting(false);
     }
@@ -125,7 +126,7 @@ export default function JobCard({ job }: JobCardProps) {
             <div className="flex items-center gap-2 shrink-0">
               {latestAnalysis && matchScore !== undefined && (
                 <Badge
-                  variant={getMatchScoreColor(matchScore) as any}
+                  variant={getMatchScoreColor(matchScore) as "default" | "secondary" | "destructive" | "outline"}
                   className="text-lg px-4 py-1.5 font-semibold"
                 >
                   {matchScore}%

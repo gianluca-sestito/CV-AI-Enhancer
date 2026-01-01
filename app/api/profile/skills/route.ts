@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma/client";
+import { handleApiError } from "@/lib/utils/errors";
+import type { Skill } from "@/lib/types";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -24,7 +26,7 @@ export async function PUT(request: NextRequest) {
 
     // Create new skills
     const created = await prisma.skill.createMany({
-      data: skills.map((skill: any) => ({
+      data: (skills as Array<{ name: string; category?: string | null; proficiencyLevel?: string | null }>).map((skill) => ({
         profileId,
         name: skill.name,
         category: skill.category || null,
@@ -33,11 +35,8 @@ export async function PUT(request: NextRequest) {
     });
 
     return NextResponse.json({ success: true, count: created.count });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleApiError(error);
   }
 }
 

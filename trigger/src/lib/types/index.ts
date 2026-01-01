@@ -17,10 +17,8 @@ import {
 import {
   CVStructureSchema,
   CVContentSchema,
-  CVFormatSchema,
   type CVStructure,
   type CVContent,
-  type CVFormat,
 } from "./cvSchemas";
 
 // TypeScript types derived from Zod schemas
@@ -55,11 +53,10 @@ export {
   CVValidationSchema,
   CVStructureSchema,
   CVContentSchema,
-  CVFormatSchema,
 };
 
 // Re-export CV types
-export type { CVStructure, CVContent, CVFormat };
+export type { CVStructure, CVContent };
 
 
 

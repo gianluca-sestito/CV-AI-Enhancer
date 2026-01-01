@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma/client";
 import { z } from "zod";
-
-const updateCVSchema = z.object({
-  structuredContent: z.any().optional(), // Structured CV data
-  markdownContent: z.string().optional(), // Deprecated, kept for backward compatibility
-});
+import { updateCVSchema } from "@/lib/types/schemas";
+import type { CVData } from "@/lib/types/cv";
+import type { Prisma } from "@prisma/client";
 
 export async function GET(
   request: NextRequest,
@@ -67,9 +65,12 @@ export async function PUT(
     }
 
     // Update CV content (prefer structuredContent, fallback to markdownContent for backward compatibility)
-    const updateData: any = {};
+    const updateData: {
+      structuredContent?: Prisma.InputJsonValue;
+      markdownContent?: string;
+    } = {};
     if (validatedData.structuredContent !== undefined) {
-      updateData.structuredContent = validatedData.structuredContent;
+      updateData.structuredContent = validatedData.structuredContent as Prisma.InputJsonValue;
     }
     if (validatedData.markdownContent !== undefined) {
       updateData.markdownContent = validatedData.markdownContent;

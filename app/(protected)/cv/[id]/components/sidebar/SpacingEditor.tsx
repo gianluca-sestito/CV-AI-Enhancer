@@ -3,6 +3,7 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useCVStyleContext } from "../CVStyleProvider";
+import type { CVStyles } from "../types";
 
 export default function SpacingEditor() {
   const { styles, updateGlobalStyle, updateSectionStyle, updateElementStyle } =
@@ -168,49 +169,52 @@ export default function SpacingEditor() {
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-gray-900">Section Spacing</h3>
         <div className="space-y-3">
-          {Object.entries(styles.sections).map(([sectionKey, sectionStyles]) => (
-            <div key={sectionKey} className="border border-gray-200 rounded p-3 space-y-2">
-              <Label className="text-xs font-medium capitalize">{sectionKey}</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs">Margin Top</Label>
-                  <Input
-                    type="text"
-                    value={sectionStyles.marginTop || ""}
-                    onChange={(e) =>
-                      updateSectionStyle(sectionKey as any, "marginTop", e.target.value)
-                    }
-                    placeholder="0"
-                    className="text-xs"
-                  />
+          {(Object.keys(styles.sections) as Array<keyof CVStyles["sections"]>).map((sectionKey) => {
+            const sectionStyles = styles.sections[sectionKey];
+            return (
+              <div key={sectionKey} className="border border-gray-200 rounded p-3 space-y-2">
+                <Label className="text-xs font-medium capitalize">{sectionKey}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Margin Top</Label>
+                    <Input
+                      type="text"
+                      value={sectionStyles.marginTop || ""}
+                      onChange={(e) =>
+                        updateSectionStyle(sectionKey, "marginTop", e.target.value)
+                      }
+                      placeholder="0"
+                      className="text-xs"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Margin Bottom</Label>
+                    <Input
+                      type="text"
+                      value={sectionStyles.marginBottom || ""}
+                      onChange={(e) =>
+                        updateSectionStyle(sectionKey, "marginBottom", e.target.value)
+                      }
+                      placeholder="0"
+                      className="text-xs"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <Label className="text-xs">Margin Bottom</Label>
+                  <Label className="text-xs">Padding</Label>
                   <Input
                     type="text"
-                    value={sectionStyles.marginBottom || ""}
+                    value={sectionStyles.padding || ""}
                     onChange={(e) =>
-                      updateSectionStyle(sectionKey as any, "marginBottom", e.target.value)
+                      updateSectionStyle(sectionKey, "padding", e.target.value)
                     }
                     placeholder="0"
                     className="text-xs"
                   />
                 </div>
               </div>
-              <div>
-                <Label className="text-xs">Padding</Label>
-                <Input
-                  type="text"
-                  value={sectionStyles.padding || ""}
-                  onChange={(e) =>
-                    updateSectionStyle(sectionKey as any, "padding", e.target.value)
-                  }
-                  placeholder="0"
-                  className="text-xs"
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

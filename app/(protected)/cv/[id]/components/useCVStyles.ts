@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { CVStyles } from "./types";
+import { logger } from "@/lib/utils/logger";
 
 const STORAGE_KEY_PREFIX = "cv-styles-";
 
@@ -39,7 +40,7 @@ const defaultStyles: CVStyles = {
       color: "#111827",
       marginTop: "32px",
       marginBottom: "16px",
-      paddingBottom: "8px",
+      padding: "0 0 8px 0",
     },
     h3: {
       fontSize: "16pt",
@@ -149,7 +150,12 @@ export function useCVStyles(cvId: string) {
           errorMessage = errorData.error || errorData.details || errorMessage;
           if (errorData.details && Array.isArray(errorData.details)) {
             // Zod validation errors
-            errorMessage = `Validation error: ${errorData.details.map((e: any) => e.message || e.path?.join(".")).join(", ")}`;
+            errorMessage = `Validation error: ${errorData.details
+              .map(
+                (e: { message?: string; path?: string[] }) =>
+                  e.message || e.path?.join(".")
+              )
+              .join(", ")}`;
           }
         } catch (e) {
           // If response is not JSON, use status text
@@ -160,7 +166,7 @@ export function useCVStyles(cvId: string) {
 
       return { success: true };
     } catch (error) {
-      console.error("Error saving styles to database:", error);
+      logger.error("Error saving styles to database", error, { cvId });
       return {
         success: false,
         error: error instanceof Error ? error.message : "Failed to save styles",
@@ -190,7 +196,7 @@ function loadStyles(cvId: string): CVStyles {
       return mergeStyles(defaultStyles, parsed);
     }
   } catch (error) {
-    console.error("Error loading styles:", error);
+    logger.error("Error loading styles", error, { cvId });
   }
 
   return defaultStyles;
@@ -201,9 +207,9 @@ function saveStyles(cvId: string, styles: CVStyles): void {
 
   try {
     localStorage.setItem(`${STORAGE_KEY_PREFIX}${cvId}`, JSON.stringify(styles));
-  } catch (error) {
-    console.error("Error saving styles:", error);
-  }
+    } catch (error) {
+      logger.error("Error saving styles", error, { cvId });
+    }
 }
 
 function mergeStyles(defaults: CVStyles, overrides: Partial<CVStyles>): CVStyles {
