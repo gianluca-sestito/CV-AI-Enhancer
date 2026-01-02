@@ -56,10 +56,12 @@ Fill in your environment variables:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anon key
 - `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key (for server-side operations)
 - `TRIGGER_SECRET_KEY`: Your Trigger.dev secret key
+- `TRIGGER_PROJECT_ID`: Your Trigger.dev project ID (found in Trigger.dev Dashboard)
 - `OPENAI_API_KEY`: Your OpenAI API key
 
 **Optional:**
 - `NEXT_PUBLIC_TRIGGER_PUBLIC_API_KEY`: Trigger.dev public API key (if using public API)
+- `PUPPETEER_EXECUTABLE_PATH`: Path to Chromium executable for PDF generation (only needed in serverless environments)
 
 4. Set up the database:
 ```bash
@@ -276,4 +278,4 @@ See the `docs/` directory for detailed documentation:
 
 ## License
 
-Private project - All rights reserved
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
