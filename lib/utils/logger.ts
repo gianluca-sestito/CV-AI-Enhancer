@@ -55,8 +55,20 @@ class Logger {
     this.log("info", message, context);
   }
 
-  warn(message: string, context?: LogContext) {
-    this.log("warn", message, context);
+  warn(message: string, error?: Error | unknown, context?: LogContext) {
+    const errorContext = {
+      ...context,
+      ...(error instanceof Error && {
+        error: {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        },
+      }),
+      ...(typeof error === "object" && error !== null && !(error instanceof Error) && { error }),
+    };
+
+    this.log("warn", message, errorContext);
   }
 
   error(message: string, error?: Error | unknown, context?: LogContext) {
