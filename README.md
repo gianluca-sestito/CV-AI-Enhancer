@@ -17,7 +17,7 @@ A production-quality personal web application for AI-assisted CV analysis and ta
 
 - **Frontend**: Next.js 16 (App Router), TypeScript, TailwindCSS, shadcn/ui
 - **Backend/Async**: Trigger.dev v4 for background jobs
-- **AI**: Mastra framework with OpenAI (GPT-4o)
+- **AI**: Mastra framework with OpenAI
 - **Database**: Supabase (PostgreSQL) with Prisma ORM
 - **Deployment**: Vercel (frontend), Trigger.dev Cloud (workflows)
 
