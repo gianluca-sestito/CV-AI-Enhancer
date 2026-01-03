@@ -89,7 +89,6 @@ export default async function JobDetailPage({
                 <>
                   <AnalysisResults
                     analysis={{
-                      ...latestAnalysis,
                       ...parseAnalysisResult({
                         strengths: latestAnalysis.strengths,
                         gaps: latestAnalysis.gaps,
@@ -97,6 +96,10 @@ export default async function JobDetailPage({
                         suggestedFocusAreas: latestAnalysis.suggestedFocusAreas,
                         jobRequirements: latestAnalysis.jobRequirements,
                       }),
+                      // Preserve critical fields from latestAnalysis that parseAnalysisResult doesn't handle correctly
+                      id: latestAnalysis.id,
+                      matchScore: latestAnalysis.matchScore,
+                      status: latestAnalysis.status,
                     } as AnalysisResultData & { id: string; matchScore: number; status: string }}
                     jobId={job.id}
                     profileId={profile.id}
