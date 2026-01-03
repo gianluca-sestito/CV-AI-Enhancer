@@ -403,12 +403,34 @@ function ExperienceEditor({
             <Label>Achievements (one per line)</Label>
             <Textarea
               value={experience.achievements.join("\n")}
-              onChange={(e) =>
+              onChange={(e) => {
+                // Split by newlines and filter empty lines, but preserve trailing empty lines
+                // to allow users to create new lines by pressing Enter
+                const lines = e.target.value.split("\n");
+                // Filter empty lines in the middle, but keep trailing empty lines
+                const filtered: string[] = [];
+                for (let i = 0; i < lines.length; i++) {
+                  const line = lines[i];
+                  const isLast = i === lines.length - 1;
+                  // Keep non-empty lines, and keep empty lines if they're at the end
+                  if (line.trim() || isLast) {
+                    filtered.push(line);
+                  }
+                }
                 onUpdate({
                   ...experience,
-                  achievements: e.target.value.split("\n").filter((l) => l.trim()),
-                })
-              }
+                  achievements: filtered,
+                });
+              }}
+              onKeyDown={(e) => {
+                // Ensure Enter key creates a new line in textarea
+                // Don't prevent default behavior for Enter in textarea
+                if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+                  // Allow default behavior - Enter should create a new line
+                  // This handler ensures no parent handlers interfere
+                  e.stopPropagation();
+                }
+              }}
               rows={4}
               placeholder="Achievement 1&#10;Achievement 2"
             />
