@@ -62,6 +62,9 @@ Fill in your environment variables:
 **Optional:**
 - `NEXT_PUBLIC_TRIGGER_PUBLIC_API_KEY`: Trigger.dev public API key (if using public API)
 - `PUPPETEER_EXECUTABLE_PATH`: Path to Chromium executable for PDF generation (only needed in serverless environments)
+- `LANGFUSE_PUBLIC_KEY`: Langfuse public API key (for AI observability and tracing)
+- `LANGFUSE_SECRET_KEY`: Langfuse secret key (for AI observability and tracing)
+- `LANGFUSE_BASE_URL`: Langfuse instance URL (defaults to https://cloud.langfuse.com if not provided)
 
 4. Set up the database:
 ```bash
@@ -186,6 +189,7 @@ The application follows a clean architecture with:
 - **Database**: Prisma ORM on top of Supabase PostgreSQL
 - **Storage**: Supabase Storage for profile images and CV imports
 - **Security**: Supabase RLS policies for row-level security
+- **Observability**: Langfuse integration for AI tracing and LLM observability (optional)
 
 ### Background Tasks
 
