@@ -27,6 +27,17 @@ interface ProfileDataImportDialogProps {
   onImport: (experience: Omit<Experience, "experienceId">) => void;
 }
 
+/**
+ * Renders a controlled dialog that lets the user select and import a work experience from their profile into the current CV.
+ *
+ * The dialog fetches profile work experiences, shows loading/error/empty states, allows selecting an experience, previews the transformed CV experience (company, position, achievements), and invokes `onImport` with the transformed experience when the user confirms. If a `currentExperience` is provided, selecting an experience with a different company or position will surface a warning that the entire experience will be replaced rather than only achievements.
+ *
+ * @param open - Whether the dialog is open.
+ * @param onOpenChange - Callback invoked with the new open state.
+ * @param currentExperience - Optional existing CV experience used to compare company and position for change warnings.
+ * @param onImport - Callback invoked with the transformed experience payload (without `experienceId`) when the user confirms import.
+ * @returns The dialog React element for importing profile work experiences.
+ */
 export default function ProfileDataImportDialog({
   open,
   onOpenChange,
@@ -239,4 +250,3 @@ export default function ProfileDataImportDialog({
     </Dialog>
   );
 }
-

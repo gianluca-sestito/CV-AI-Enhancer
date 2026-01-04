@@ -2,7 +2,16 @@ import type { WorkExperience } from "@/lib/types/prisma";
 import type { Experience } from "./types";
 
 /**
- * Converts a date (Date object or ISO string) to YYYY-MM-DD format
+ * Convert a Date or date-string to a `YYYY-MM-DD` date string.
+ *
+ * If `date` is `null`, returns `null`. If `date` is a string already in
+ * `YYYY-MM-DD` form, it is returned unchanged. If `date` is a parsable
+ * date string or a `Date` object, the function returns the corresponding
+ * `YYYY-MM-DD` representation. If a string cannot be parsed as a valid
+ * date, returns `null`.
+ *
+ * @param date - The input value to convert; may be a `Date`, a date string, or `null`
+ * @returns The date in `YYYY-MM-DD` format, or `null` when input is `null` or invalid
  */
 function formatDateToISO(date: Date | string | null): string | null {
   if (!date) return null;
@@ -26,9 +35,10 @@ function formatDateToISO(date: Date | string | null): string | null {
 }
 
 /**
- * Converts a WorkExperience from profile format to CV Experience format
- * Parses the description field into an achievements array
- * Handles dates that may be Date objects or ISO strings (from API serialization)
+ * Map a profile WorkExperience into a CV-friendly Experience object.
+ *
+ * @param workExp - Work experience record from the profile containing `company`, `position`, `startDate`, `endDate`, `current`, and `description`
+ * @returns An object with `company`, `position`, `startDate` (YYYY-MM-DD; falls back to today's date if the source `startDate` is missing or invalid), `endDate` (YYYY-MM-DD or `null`), `current`, `achievements` (parsed from `description`), and `isBrief` set to `false`
  */
 export function transformWorkExperienceToCVExperience(
   workExp: WorkExperience
@@ -49,12 +59,10 @@ export function transformWorkExperienceToCVExperience(
 }
 
 /**
- * Parses a description string into an array of achievement strings
- * Handles:
- * - Newline-separated items
- * - Bullet points (•, -, *, etc.)
- * - Numbered lists
- * - Mixed formats
+ * Convert a free-form description into a list of individual achievement strings.
+ *
+ * @param description - The raw description text (may contain newlines, bullets, or numbered lists)
+ * @returns An array of trimmed achievement strings; returns an empty array if `description` is empty or only whitespace. If no distinct lines or markers are detected, returns a single-element array containing the trimmed original `description`.
  */
 function parseDescriptionToAchievements(description: string): string[] {
   if (!description || !description.trim()) {
@@ -92,7 +100,9 @@ function parseDescriptionToAchievements(description: string): string[] {
 }
 
 /**
- * Checks if two experiences match by company and position
+ * Determine whether two experiences refer to the same role based on company and position.
+ *
+ * @returns `true` if both company and position are equal after trimming and case-insensitive comparison, `false` otherwise.
  */
 export function experiencesMatch(
   exp1: { company: string; position: string },
@@ -104,4 +114,3 @@ export function experiencesMatch(
     normalize(exp1.position) === normalize(exp2.position)
   );
 }
-

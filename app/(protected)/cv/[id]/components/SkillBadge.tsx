@@ -18,6 +18,20 @@ interface SkillBadgeProps {
   dragAttributes?: DraggableAttributes;
 }
 
+/**
+ * Render a stylized skill badge with an optional drag handle and optional remove action.
+ *
+ * The badge displays the provided skill text, applies a dimmed style when `isDragging` is true,
+ * spreads `dragAttributes` onto the root element for sortable behavior, and conditionally renders
+ * a drag handle and remove button.
+ *
+ * @param onRemove - Callback invoked when the remove button is clicked; if omitted, the remove button is not shown.
+ * @param isDragging - When true, applies a reduced-opacity style to indicate the badge is being dragged.
+ * @param showDragHandle - When true, allows rendering of a drag handle if `dragListeners` and `dragAttributes` are provided.
+ * @param dragListeners - Event listeners returned from a sortable hook to attach to the drag handle.
+ * @param dragAttributes - Draggable attributes returned from the drag-and-drop library to spread onto the root element.
+ * @returns A React element representing the skill badge with the configured interactive controls.
+ */
 export default function SkillBadge({
   skill,
   onRemove,
@@ -59,5 +73,4 @@ export default function SkillBadge({
     </div>
   );
 }
-
 

@@ -12,6 +12,17 @@ interface UseProfileDataReturn {
   refetch: () => Promise<void>;
 }
 
+/**
+ * Exposes profile data, derived lists (work experiences and skills), loading/error state, and a refetch function for components.
+ *
+ * @returns An object containing:
+ * - `profile`: the fetched profile data or `null` if unavailable
+ * - `workExperiences`: array of work experiences (empty array if `profile` is `null`)
+ * - `skills`: array of skills (empty array if `profile` is `null`)
+ * - `isLoading`: `true` while a fetch is in progress, `false` otherwise
+ * - `error`: an error message string if the last fetch failed, or `null`
+ * - `refetch`: a function to re-trigger fetching the profile
+ */
 export function useProfileData(): UseProfileDataReturn {
   const [profile, setProfile] = useState<ProfileWithRelations | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,6 +60,5 @@ export function useProfileData(): UseProfileDataReturn {
     refetch: fetchProfile,
   };
 }
-
 
 

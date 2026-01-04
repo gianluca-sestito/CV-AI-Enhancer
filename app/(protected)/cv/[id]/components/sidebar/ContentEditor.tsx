@@ -35,6 +35,15 @@ interface ContentEditorProps {
   updateCVData: (updater: (data: CVData) => CVData) => void;
 }
 
+/**
+ * Renders a full-featured CV editor for editing header, summary, experiences, skills, education, and languages.
+ *
+ * The component binds form controls to `cvData` and applies immutable updates via `updateCVData`.
+ *
+ * @param cvData - The current CV data model to edit.
+ * @param updateCVData - Setter that accepts an updater function `(prev: CVData) => CVData` to immutably apply changes to the CV data.
+ * @returns A React element containing the CV content editor UI.
+ */
 export default function ContentEditor({ cvData, updateCVData }: ContentEditorProps) {
   return (
     <div className="space-y-6">
@@ -349,6 +358,15 @@ export default function ContentEditor({ cvData, updateCVData }: ContentEditorPro
   );
 }
 
+/**
+ * Renders an editable, collapsible editor for a single experience entry with fields for company, position, start/end dates, current flag, and newline-separated achievements; includes an import-from-profile workflow.
+ *
+ * @param experience - The experience entry being edited
+ * @param index - Zero-based index of the experience in the list (used for labels and ids)
+ * @param onUpdate - Called with the updated Experience when any field changes
+ * @param onRemove - Called to remove this experience entry
+ * @returns The Experience editor React element
+ */
 function ExperienceEditor({
   experience,
   index,
@@ -513,6 +531,18 @@ function ExperienceEditor({
   );
 }
 
+/**
+ * Renders an editor for a single skill group, allowing editing of the category, adding/removing skills, and drag-and-drop reordering.
+ *
+ * The component integrates profile-derived skill suggestions, prevents duplicate skills within the group, and reports immutable updates
+ * to the parent via `onUpdate`. Calling `onRemove` signals that the entire group should be deleted.
+ *
+ * @param group - The skill group being edited (category and skills).
+ * @param index - The zero-based position of this group in the parent list (used for display/order context).
+ * @param allSkills - A flattened list of all known skills across groups used to surface existing skills as suggestions.
+ * @param onUpdate - Called with the updated `SkillGroup` when the category, skills, or their order change.
+ * @param onRemove - Called when the user requests removal of this skill group.
+ */
 function SkillGroupEditor({
   group,
   index,
@@ -622,6 +652,14 @@ function SkillGroupEditor({
   );
 }
 
+/**
+ * Renders a draggable skill badge with a visible drag handle and remove action.
+ *
+ * @param id - Unique identifier for the draggable item (used by the drag-and-drop system)
+ * @param skill - The text label displayed on the badge
+ * @param onRemove - Callback invoked when the badge's remove control is activated
+ * @returns The rendered draggable skill badge element
+ */
 function SortableSkillBadge({
   id,
   skill,
@@ -660,6 +698,15 @@ function SortableSkillBadge({
   );
 }
 
+/**
+ * Render an editable card for a single education entry.
+ *
+ * @param education - The education entry being edited
+ * @param index - Zero-based index of the entry (used for labeling and element ids)
+ * @param onUpdate - Callback invoked with the updated education object when any field changes
+ * @param onRemove - Callback invoked when the entry should be removed
+ * @returns The rendered education editor element
+ */
 function EducationEditor({
   education,
   index,
@@ -751,4 +798,3 @@ function EducationEditor({
     </div>
   );
 }
-

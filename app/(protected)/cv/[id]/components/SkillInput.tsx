@@ -37,6 +37,17 @@ const COMMON_SKILLS = [
   "Scrum",
 ];
 
+/**
+ * Controlled skill input component with prioritized autocomplete suggestions and an add action.
+ *
+ * Displays suggestions sourced from `profileSkills` first, then `COMMON_SKILLS`, excluding any `existingSkills`. When the input is empty it shows up to five available profile skills. Selecting a suggestion or pressing Enter adds the skill via `onAdd`; Escape hides the suggestion list. The add button is disabled for empty input or when the entered skill already exists.
+ *
+ * @param onAdd - Callback invoked with the skill string to add
+ * @param existingSkills - Skills that are already added (excluded from suggestions)
+ * @param profileSkills - User's profile skills which are prioritized in suggestions
+ * @param placeholder - Input placeholder text
+ * @returns The rendered skill input UI element
+ */
 export default function SkillInput({
   onAdd,
   existingSkills = [],
@@ -174,5 +185,4 @@ export default function SkillInput({
     </div>
   );
 }
-
 
