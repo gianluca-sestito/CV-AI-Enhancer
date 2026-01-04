@@ -15,6 +15,14 @@ interface EditableSkillsSectionProps {
   isEditing: boolean;
 }
 
+/**
+ * Renders an editable list of categorized skills with controls for adding, renaming, and removing categories and skills.
+ *
+ * @param skillGroups - The current array of skill groups, each containing a `category` name and `skills` array.
+ * @param onChange - Callback invoked with the updated `skillGroups` whenever categories or skills are added, removed, or renamed.
+ * @param isEditing - When `true`, shows editing controls (rename, add/remove category, add/remove skills); when `false`, renders a read-only view.
+ * @returns The skills section as a JSX element, or `null` when there are no categories and editing is disabled.
+ */
 export default function EditableSkillsSection({
   skillGroups,
   onChange,
@@ -152,5 +160,4 @@ export default function EditableSkillsSection({
     </div>
   );
 }
-
 
