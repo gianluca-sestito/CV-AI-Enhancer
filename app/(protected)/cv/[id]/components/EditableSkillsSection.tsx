@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import EditableText from "./EditableText";
 import SkillBadge from "./SkillBadge";
 import SkillInput from "./SkillInput";
 import { Button } from "@/components/ui/button";
 import { Plus, X, GripVertical } from "lucide-react";
 import type { SkillGroup } from "./types";
+import { useProfileData } from "./useProfileData";
 
 interface EditableSkillsSectionProps {
   skillGroups: SkillGroup[];
@@ -20,6 +21,12 @@ export default function EditableSkillsSection({
   isEditing,
 }: EditableSkillsSectionProps) {
   const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null);
+  const { skills: profileSkills } = useProfileData();
+
+  // Extract skill names from profile skills
+  const profileSkillNames = useMemo(() => {
+    return profileSkills.map((skill) => skill.name);
+  }, [profileSkills]);
 
   const handleCategoryChange = (index: number, category: string) => {
     const newGroups = [...skillGroups];
@@ -123,6 +130,7 @@ export default function EditableSkillsSection({
               <SkillInput
                 onAdd={(skill) => handleAddSkill(groupIdx, skill)}
                 existingSkills={getAllSkills()}
+                profileSkills={profileSkillNames}
                 placeholder={`Add skill to ${group.category}...`}
               />
             </div>

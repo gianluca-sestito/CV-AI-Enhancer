@@ -5,8 +5,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Plus, X, GripVertical } from "lucide-react";
+import { Plus, X, GripVertical, Download } from "lucide-react";
 import type { CVData, Experience, Education, Language, SkillGroup } from "../types";
+import ProfileDataImportDialog from "../ProfileDataImportDialog";
+import { experiencesMatch } from "../profileDataTransformers";
+import SkillInput from "../SkillInput";
+import SkillBadge from "../SkillBadge";
+import { useProfileData } from "../useProfileData";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface ContentEditorProps {
   cvData: CVData;
@@ -178,26 +200,31 @@ export default function ContentEditor({ cvData, updateCVData }: ContentEditorPro
           </Button>
         </div>
         <div className="space-y-3">
-          {cvData.skillGroups.map((group, groupIdx) => (
-            <SkillGroupEditor
-              key={groupIdx}
-              group={group}
-              index={groupIdx}
-              onUpdate={(updated) =>
-                updateCVData((data) => {
-                  const newGroups = [...data.skillGroups];
-                  newGroups[groupIdx] = updated;
-                  return { ...data, skillGroups: newGroups };
-                })
-              }
-              onRemove={() =>
-                updateCVData((data) => ({
-                  ...data,
-                  skillGroups: data.skillGroups.filter((_, i) => i !== groupIdx),
-                }))
-              }
-            />
-          ))}
+          {cvData.skillGroups.map((group, groupIdx) => {
+            // Get all skills from all groups to avoid duplicates
+            const allSkills = cvData.skillGroups.flatMap((g) => g.skills);
+            return (
+              <SkillGroupEditor
+                key={groupIdx}
+                group={group}
+                index={groupIdx}
+                allSkills={allSkills}
+                onUpdate={(updated) =>
+                  updateCVData((data) => {
+                    const newGroups = [...data.skillGroups];
+                    newGroups[groupIdx] = updated;
+                    return { ...data, skillGroups: newGroups };
+                  })
+                }
+                onRemove={() =>
+                  updateCVData((data) => ({
+                    ...data,
+                    skillGroups: data.skillGroups.filter((_, i) => i !== groupIdx),
+                  }))
+                }
+              />
+            );
+          })}
         </div>
       </div>
 
@@ -334,6 +361,7 @@ function ExperienceEditor({
   onRemove: () => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   return (
     <div className="border border-gray-200 rounded-lg p-3 space-y-2">
@@ -400,7 +428,18 @@ function ExperienceEditor({
             </Label>
           </div>
           <div>
-            <Label>Achievements (one per line)</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label>Achievements (one per line)</Label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setImportDialogOpen(true)}
+                className="text-xs"
+              >
+                <Download className="h-3 w-3 mr-1" />
+                Import from Profile
+              </Button>
+            </div>
             <Textarea
               value={experience.achievements.join("\n")}
               onChange={(e) => {
@@ -435,6 +474,39 @@ function ExperienceEditor({
               placeholder="Achievement 1&#10;Achievement 2"
             />
           </div>
+          <ProfileDataImportDialog
+            open={importDialogOpen}
+            onOpenChange={setImportDialogOpen}
+            currentExperience={experience}
+            onImport={(importedData) => {
+              // If company/position match, only replace achievements
+              // Otherwise, replace the entire experience
+              const matches = experiencesMatch(
+                {
+                  company: experience.company,
+                  position: experience.position,
+                },
+                {
+                  company: importedData.company,
+                  position: importedData.position,
+                }
+              );
+
+              if (matches) {
+                // Only replace achievements
+                onUpdate({
+                  ...experience,
+                  achievements: importedData.achievements,
+                });
+              } else {
+                // Replace entire experience but keep the experienceId
+                onUpdate({
+                  ...experience,
+                  ...importedData,
+                });
+              }
+            }}
+          />
         </div>
       )}
     </div>
@@ -444,36 +516,63 @@ function ExperienceEditor({
 function SkillGroupEditor({
   group,
   index,
+  allSkills,
   onUpdate,
   onRemove,
 }: {
   group: SkillGroup;
   index: number;
+  allSkills: string[];
   onUpdate: (group: SkillGroup) => void;
   onRemove: () => void;
 }) {
-  const [skillsInput, setSkillsInput] = useState(group.skills.join(", "));
+  const { skills: profileSkills } = useProfileData();
+  
+  // Extract skill names from profile skills
+  const profileSkillNames = profileSkills.map((skill) => skill.name);
 
-  // Sync with group.skills when it changes externally
-  useEffect(() => {
-    setSkillsInput(group.skills.join(", "));
-  }, [group.skills]);
+  const handleAddSkill = (skill: string) => {
+    if (!group.skills.includes(skill)) {
+      onUpdate({
+        ...group,
+        skills: [...group.skills, skill],
+      });
+    }
+  };
 
-  const handleSkillsChange = (value: string) => {
-    setSkillsInput(value);
-    // Process skills immediately but keep the raw input for display
-    const skills = value
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+  const handleRemoveSkill = (skillIndex: number) => {
     onUpdate({
       ...group,
-      skills,
+      skills: group.skills.filter((_, i) => i !== skillIndex),
     });
   };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = group.skills.findIndex((_, idx) => `skill-${idx}` === active.id);
+      const newIndex = group.skills.findIndex((_, idx) => `skill-${idx}` === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newSkills = arrayMove(group.skills, oldIndex, newIndex);
+        onUpdate({
+          ...group,
+          skills: newSkills,
+        });
+      }
+    }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   return (
-    <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+    <div className="border border-gray-200 rounded-lg p-4 space-y-4">
       <div className="flex items-center gap-2">
         <Input
           value={group.category}
@@ -485,27 +584,78 @@ function SkillGroupEditor({
           <X className="h-4 w-4" />
         </Button>
       </div>
-      <div>
-        <Label>Skills (comma-separated)</Label>
-        <Input
-          type="text"
-          value={skillsInput}
-          onChange={(e) => handleSkillsChange(e.target.value)}
-          onBlur={() => {
-            // Ensure skills are properly formatted on blur
-            const skills = skillsInput
-              .split(",")
-              .map((s) => s.trim())
-              .filter(Boolean);
-            setSkillsInput(skills.join(", "));
-            onUpdate({
-              ...group,
-              skills,
-            });
-          }}
-          placeholder="Skill1, Skill2, Skill3"
-        />
+      <div className="space-y-3">
+        <Label className="text-sm font-semibold text-gray-900">Skills</Label>
+        {group.skills.length > 0 && (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={group.skills.map((_, idx) => `skill-${idx}`)}
+              strategy={horizontalListSortingStrategy}
+            >
+              <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-md min-h-[2.5rem]">
+                {group.skills.map((skill, skillIdx) => (
+                  <SortableSkillBadge
+                    key={skillIdx}
+                    id={`skill-${skillIdx}`}
+                    skill={skill}
+                    onRemove={() => handleRemoveSkill(skillIdx)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
+        <div className="pt-1">
+          <SkillInput
+            onAdd={handleAddSkill}
+            existingSkills={allSkills}
+            profileSkills={profileSkillNames}
+            placeholder="Add a skill..."
+          />
+        </div>
       </div>
+    </div>
+  );
+}
+
+function SortableSkillBadge({
+  id,
+  skill,
+  onRemove,
+}: {
+  id: string;
+  skill: string;
+  onRemove: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <SkillBadge
+        skill={skill}
+        onRemove={onRemove}
+        showDragHandle={true}
+        isDragging={isDragging}
+        dragListeners={listeners}
+        dragAttributes={attributes}
+      />
     </div>
   );
 }
