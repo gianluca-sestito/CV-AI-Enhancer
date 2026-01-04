@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +48,9 @@ export default function ProfileDataImportDialog({
   const [selectedExperience, setSelectedExperience] =
     useState<WorkExperience | null>(null);
   const [showWarning, setShowWarning] = useState(false);
+  const [transformationError, setTransformationError] = useState<string | null>(
+    null
+  );
 
   const formatDate = (date: Date | string | null) => {
     if (!date) return "Present";
@@ -80,16 +83,35 @@ export default function ProfileDataImportDialog({
   const handleImport = () => {
     if (!selectedExperience) return;
 
-    const transformed = transformWorkExperienceToCVExperience(selectedExperience);
-    onImport(transformed);
-    handleClose();
+    try {
+      const transformed = transformWorkExperienceToCVExperience(selectedExperience);
+      setTransformationError(null);
+      onImport(transformed);
+      handleClose();
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to transform work experience";
+      setTransformationError(errorMessage);
+    }
   };
 
   const handleClose = () => {
     setSelectedExperience(null);
     setShowWarning(false);
+    setTransformationError(null);
     onOpenChange(false);
   };
+
+  // Memoize the transformed experience to avoid re-computing on every render
+  const transformedExperience = useMemo(() => {
+    if (!selectedExperience) return null;
+    try {
+      return transformWorkExperienceToCVExperience(selectedExperience);
+    } catch (err) {
+      // Error will be handled in the UI
+      return null;
+    }
+  }, [selectedExperience]);
 
   if (isLoading) {
     return (
@@ -205,6 +227,13 @@ export default function ProfileDataImportDialog({
           </Alert>
         )}
 
+        {transformationError && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{transformationError}</AlertDescription>
+          </Alert>
+        )}
+
         {selectedExperience && (
           <div className="border-t pt-4">
             <div className="text-sm font-medium text-gray-900 mb-2">
@@ -222,13 +251,18 @@ export default function ProfileDataImportDialog({
               <div>
                 <span className="font-medium">Achievements:</span>
                 <ul className="list-disc list-inside mt-1 ml-2 space-y-0.5">
-                  {transformWorkExperienceToCVExperience(
-                    selectedExperience
-                  ).achievements.map((achievement, idx) => (
-                    <li key={idx} className="text-gray-600">
-                      {achievement}
+                  {transformedExperience ? (
+                    transformedExperience.achievements.map((achievement, idx) => (
+                      <li key={idx} className="text-gray-600">
+                        {achievement}
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-red-600">
+                      Error loading achievements:{" "}
+                      {transformationError || "Unknown error"}
                     </li>
-                  ))}
+                  )}
                 </ul>
               </div>
             </div>

@@ -45,6 +45,11 @@ interface ContentEditorProps {
  * @returns A React element containing the CV content editor UI.
  */
 export default function ContentEditor({ cvData, updateCVData }: ContentEditorProps) {
+  const { skills: profileSkills } = useProfileData();
+  
+  // Extract skill names from profile skills
+  const profileSkillNames = profileSkills.map((skill) => skill.name);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -209,15 +214,16 @@ export default function ContentEditor({ cvData, updateCVData }: ContentEditorPro
           </Button>
         </div>
         <div className="space-y-3">
-          {cvData.skillGroups.map((group, groupIdx) => {
-            // Get all skills from all groups to avoid duplicates
+          {/* Compute allSkills once outside the map since it doesn't depend on groupIdx */}
+          {(() => {
             const allSkills = cvData.skillGroups.flatMap((g) => g.skills);
-            return (
+            return cvData.skillGroups.map((group, groupIdx) => (
               <SkillGroupEditor
                 key={groupIdx}
                 group={group}
                 index={groupIdx}
                 allSkills={allSkills}
+                profileSkillNames={profileSkillNames}
                 onUpdate={(updated) =>
                   updateCVData((data) => {
                     const newGroups = [...data.skillGroups];
@@ -232,8 +238,8 @@ export default function ContentEditor({ cvData, updateCVData }: ContentEditorPro
                   }))
                 }
               />
-            );
-          })}
+            ));
+          })()}
         </div>
       </div>
 
@@ -547,19 +553,17 @@ function SkillGroupEditor({
   group,
   index,
   allSkills,
+  profileSkillNames,
   onUpdate,
   onRemove,
 }: {
   group: SkillGroup;
   index: number;
   allSkills: string[];
+  profileSkillNames: string[];
   onUpdate: (group: SkillGroup) => void;
   onRemove: () => void;
 }) {
-  const { skills: profileSkills } = useProfileData();
-  
-  // Extract skill names from profile skills
-  const profileSkillNames = profileSkills.map((skill) => skill.name);
 
   const handleAddSkill = (skill: string) => {
     if (!group.skills.includes(skill)) {
@@ -581,8 +585,9 @@ function SkillGroupEditor({
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const oldIndex = group.skills.findIndex((_, idx) => `skill-${idx}` === active.id);
-      const newIndex = group.skills.findIndex((_, idx) => `skill-${idx}` === over.id);
+      // Use skill names as stable IDs instead of indices
+      const oldIndex = group.skills.findIndex((skill) => skill === active.id);
+      const newIndex = group.skills.findIndex((skill) => skill === over.id);
 
       if (oldIndex !== -1 && newIndex !== -1) {
         const newSkills = arrayMove(group.skills, oldIndex, newIndex);
@@ -623,14 +628,14 @@ function SkillGroupEditor({
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={group.skills.map((_, idx) => `skill-${idx}`)}
+              items={group.skills}
               strategy={horizontalListSortingStrategy}
             >
               <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-md min-h-[2.5rem]">
                 {group.skills.map((skill, skillIdx) => (
                   <SortableSkillBadge
-                    key={skillIdx}
-                    id={`skill-${skillIdx}`}
+                    key={skill}
+                    id={skill}
                     skill={skill}
                     onRemove={() => handleRemoveSkill(skillIdx)}
                   />

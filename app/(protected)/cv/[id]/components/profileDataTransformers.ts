@@ -38,7 +38,8 @@ function formatDateToISO(date: Date | string | null): string | null {
  * Map a profile WorkExperience into a CV-friendly Experience object.
  *
  * @param workExp - Work experience record from the profile containing `company`, `position`, `startDate`, `endDate`, `current`, and `description`
- * @returns An object with `company`, `position`, `startDate` (YYYY-MM-DD; falls back to today's date if the source `startDate` is missing or invalid), `endDate` (YYYY-MM-DD or `null`), `current`, `achievements` (parsed from `description`), and `isBrief` set to `false`
+ * @returns An object with `company`, `position`, `startDate` (YYYY-MM-DD), `endDate` (YYYY-MM-DD or `null`), `current`, `achievements` (parsed from `description`), and `isBrief` set to `false`
+ * @throws {Error} If `startDate` is missing or cannot be parsed as a valid date. The error message includes the company, position, and raw startDate value for debugging.
  */
 export function transformWorkExperienceToCVExperience(
   workExp: WorkExperience
@@ -47,10 +48,18 @@ export function transformWorkExperienceToCVExperience(
   // Handle various formats: newlines, bullet points, numbered lists
   const achievements = parseDescriptionToAchievements(workExp.description);
 
+  // Validate startDate - throw error if invalid instead of silently falling back
+  const formattedStartDate = formatDateToISO(workExp.startDate);
+  if (!formattedStartDate) {
+    throw new Error(
+      `Invalid startDate for work experience: company="${workExp.company}", position="${workExp.position}", startDate=${JSON.stringify(workExp.startDate)}`
+    );
+  }
+
   return {
     company: workExp.company,
     position: workExp.position,
-    startDate: formatDateToISO(workExp.startDate) || new Date().toISOString().split("T")[0],
+    startDate: formattedStartDate,
     endDate: formatDateToISO(workExp.endDate),
     current: workExp.current,
     achievements,
