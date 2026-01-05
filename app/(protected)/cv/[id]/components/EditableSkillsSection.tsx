@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import EditableText from "./EditableText";
 import SkillBadge from "./SkillBadge";
 import SkillInput from "./SkillInput";
 import { Button } from "@/components/ui/button";
 import { Plus, X, GripVertical } from "lucide-react";
 import type { SkillGroup } from "./types";
+import { useProfileData } from "./useProfileData";
 
 interface EditableSkillsSectionProps {
   skillGroups: SkillGroup[];
@@ -14,12 +15,26 @@ interface EditableSkillsSectionProps {
   isEditing: boolean;
 }
 
+/**
+ * Renders an editable list of categorized skills with controls for adding, renaming, and removing categories and skills.
+ *
+ * @param skillGroups - The current array of skill groups, each containing a `category` name and `skills` array.
+ * @param onChange - Callback invoked with the updated `skillGroups` whenever categories or skills are added, removed, or renamed.
+ * @param isEditing - When `true`, shows editing controls (rename, add/remove category, add/remove skills); when `false`, renders a read-only view.
+ * @returns The skills section as a JSX element, or `null` when there are no categories and editing is disabled.
+ */
 export default function EditableSkillsSection({
   skillGroups,
   onChange,
   isEditing,
 }: EditableSkillsSectionProps) {
   const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null);
+  const { skills: profileSkills } = useProfileData();
+
+  // Extract skill names from profile skills
+  const profileSkillNames = useMemo(() => {
+    return profileSkills.map((skill) => skill.name);
+  }, [profileSkills]);
 
   const handleCategoryChange = (index: number, category: string) => {
     const newGroups = [...skillGroups];
@@ -123,6 +138,7 @@ export default function EditableSkillsSection({
               <SkillInput
                 onAdd={(skill) => handleAddSkill(groupIdx, skill)}
                 existingSkills={getAllSkills()}
+                profileSkills={profileSkillNames}
                 placeholder={`Add skill to ${group.category}...`}
               />
             </div>
@@ -144,5 +160,4 @@ export default function EditableSkillsSection({
     </div>
   );
 }
-
 

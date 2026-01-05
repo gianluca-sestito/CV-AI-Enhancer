@@ -5,15 +5,51 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Plus, X, GripVertical } from "lucide-react";
+import { Plus, X, GripVertical, Download } from "lucide-react";
 import type { CVData, Experience, Education, Language, SkillGroup } from "../types";
+import ProfileDataImportDialog from "../ProfileDataImportDialog";
+import { experiencesMatch } from "../profileDataTransformers";
+import SkillInput from "../SkillInput";
+import SkillBadge from "../SkillBadge";
+import { useProfileData } from "../useProfileData";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface ContentEditorProps {
   cvData: CVData;
   updateCVData: (updater: (data: CVData) => CVData) => void;
 }
 
+/**
+ * Renders a full-featured CV editor for editing header, summary, experiences, skills, education, and languages.
+ *
+ * The component binds form controls to `cvData` and applies immutable updates via `updateCVData`.
+ *
+ * @param cvData - The current CV data model to edit.
+ * @param updateCVData - Setter that accepts an updater function `(prev: CVData) => CVData` to immutably apply changes to the CV data.
+ * @returns A React element containing the CV content editor UI.
+ */
 export default function ContentEditor({ cvData, updateCVData }: ContentEditorProps) {
+  const { skills: profileSkills } = useProfileData();
+  
+  // Extract skill names from profile skills
+  const profileSkillNames = profileSkills.map((skill) => skill.name);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -178,26 +214,32 @@ export default function ContentEditor({ cvData, updateCVData }: ContentEditorPro
           </Button>
         </div>
         <div className="space-y-3">
-          {cvData.skillGroups.map((group, groupIdx) => (
-            <SkillGroupEditor
-              key={groupIdx}
-              group={group}
-              index={groupIdx}
-              onUpdate={(updated) =>
-                updateCVData((data) => {
-                  const newGroups = [...data.skillGroups];
-                  newGroups[groupIdx] = updated;
-                  return { ...data, skillGroups: newGroups };
-                })
-              }
-              onRemove={() =>
-                updateCVData((data) => ({
-                  ...data,
-                  skillGroups: data.skillGroups.filter((_, i) => i !== groupIdx),
-                }))
-              }
-            />
-          ))}
+          {/* Compute allSkills once outside the map since it doesn't depend on groupIdx */}
+          {(() => {
+            const allSkills = cvData.skillGroups.flatMap((g) => g.skills);
+            return cvData.skillGroups.map((group, groupIdx) => (
+              <SkillGroupEditor
+                key={groupIdx}
+                group={group}
+                index={groupIdx}
+                allSkills={allSkills}
+                profileSkillNames={profileSkillNames}
+                onUpdate={(updated) =>
+                  updateCVData((data) => {
+                    const newGroups = [...data.skillGroups];
+                    newGroups[groupIdx] = updated;
+                    return { ...data, skillGroups: newGroups };
+                  })
+                }
+                onRemove={() =>
+                  updateCVData((data) => ({
+                    ...data,
+                    skillGroups: data.skillGroups.filter((_, i) => i !== groupIdx),
+                  }))
+                }
+              />
+            ));
+          })()}
         </div>
       </div>
 
@@ -322,6 +364,15 @@ export default function ContentEditor({ cvData, updateCVData }: ContentEditorPro
   );
 }
 
+/**
+ * Renders an editable, collapsible editor for a single experience entry with fields for company, position, start/end dates, current flag, and newline-separated achievements; includes an import-from-profile workflow.
+ *
+ * @param experience - The experience entry being edited
+ * @param index - Zero-based index of the experience in the list (used for labels and ids)
+ * @param onUpdate - Called with the updated Experience when any field changes
+ * @param onRemove - Called to remove this experience entry
+ * @returns The Experience editor React element
+ */
 function ExperienceEditor({
   experience,
   index,
@@ -334,6 +385,7 @@ function ExperienceEditor({
   onRemove: () => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   return (
     <div className="border border-gray-200 rounded-lg p-3 space-y-2">
@@ -400,7 +452,18 @@ function ExperienceEditor({
             </Label>
           </div>
           <div>
-            <Label>Achievements (one per line)</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label>Achievements (one per line)</Label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setImportDialogOpen(true)}
+                className="text-xs"
+              >
+                <Download className="h-3 w-3 mr-1" />
+                Import from Profile
+              </Button>
+            </div>
             <Textarea
               value={experience.achievements.join("\n")}
               onChange={(e) => {
@@ -435,45 +498,116 @@ function ExperienceEditor({
               placeholder="Achievement 1&#10;Achievement 2"
             />
           </div>
+          <ProfileDataImportDialog
+            open={importDialogOpen}
+            onOpenChange={setImportDialogOpen}
+            currentExperience={experience}
+            onImport={(importedData) => {
+              // If company/position match, only replace achievements
+              // Otherwise, replace the entire experience
+              const matches = experiencesMatch(
+                {
+                  company: experience.company,
+                  position: experience.position,
+                },
+                {
+                  company: importedData.company,
+                  position: importedData.position,
+                }
+              );
+
+              if (matches) {
+                // Only replace achievements
+                onUpdate({
+                  ...experience,
+                  achievements: importedData.achievements,
+                });
+              } else {
+                // Replace entire experience but keep the experienceId
+                onUpdate({
+                  ...experience,
+                  ...importedData,
+                });
+              }
+            }}
+          />
         </div>
       )}
     </div>
   );
 }
 
+/**
+ * Renders an editor for a single skill group, allowing editing of the category, adding/removing skills, and drag-and-drop reordering.
+ *
+ * The component integrates profile-derived skill suggestions, prevents duplicate skills within the group, and reports immutable updates
+ * to the parent via `onUpdate`. Calling `onRemove` signals that the entire group should be deleted.
+ *
+ * @param group - The skill group being edited (category and skills).
+ * @param index - The zero-based position of this group in the parent list (used for display/order context).
+ * @param allSkills - A flattened list of all known skills across groups used to surface existing skills as suggestions.
+ * @param onUpdate - Called with the updated `SkillGroup` when the category, skills, or their order change.
+ * @param onRemove - Called when the user requests removal of this skill group.
+ */
 function SkillGroupEditor({
   group,
   index,
+  allSkills,
+  profileSkillNames,
   onUpdate,
   onRemove,
 }: {
   group: SkillGroup;
   index: number;
+  allSkills: string[];
+  profileSkillNames: string[];
   onUpdate: (group: SkillGroup) => void;
   onRemove: () => void;
 }) {
-  const [skillsInput, setSkillsInput] = useState(group.skills.join(", "));
 
-  // Sync with group.skills when it changes externally
-  useEffect(() => {
-    setSkillsInput(group.skills.join(", "));
-  }, [group.skills]);
+  const handleAddSkill = (skill: string) => {
+    if (!group.skills.includes(skill)) {
+      onUpdate({
+        ...group,
+        skills: [...group.skills, skill],
+      });
+    }
+  };
 
-  const handleSkillsChange = (value: string) => {
-    setSkillsInput(value);
-    // Process skills immediately but keep the raw input for display
-    const skills = value
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+  const handleRemoveSkill = (skillIndex: number) => {
     onUpdate({
       ...group,
-      skills,
+      skills: group.skills.filter((_, i) => i !== skillIndex),
     });
   };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      // Use skill names as stable IDs instead of indices
+      const oldIndex = group.skills.findIndex((skill) => skill === active.id);
+      const newIndex = group.skills.findIndex((skill) => skill === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newSkills = arrayMove(group.skills, oldIndex, newIndex);
+        onUpdate({
+          ...group,
+          skills: newSkills,
+        });
+      }
+    }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   return (
-    <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+    <div className="border border-gray-200 rounded-lg p-4 space-y-4">
       <div className="flex items-center gap-2">
         <Input
           value={group.category}
@@ -485,31 +619,99 @@ function SkillGroupEditor({
           <X className="h-4 w-4" />
         </Button>
       </div>
-      <div>
-        <Label>Skills (comma-separated)</Label>
-        <Input
-          type="text"
-          value={skillsInput}
-          onChange={(e) => handleSkillsChange(e.target.value)}
-          onBlur={() => {
-            // Ensure skills are properly formatted on blur
-            const skills = skillsInput
-              .split(",")
-              .map((s) => s.trim())
-              .filter(Boolean);
-            setSkillsInput(skills.join(", "));
-            onUpdate({
-              ...group,
-              skills,
-            });
-          }}
-          placeholder="Skill1, Skill2, Skill3"
-        />
+      <div className="space-y-3">
+        <Label className="text-sm font-semibold text-gray-900">Skills</Label>
+        {group.skills.length > 0 && (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={group.skills}
+              strategy={horizontalListSortingStrategy}
+            >
+              <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-md min-h-[2.5rem]">
+                {group.skills.map((skill, skillIdx) => (
+                  <SortableSkillBadge
+                    key={skill}
+                    id={skill}
+                    skill={skill}
+                    onRemove={() => handleRemoveSkill(skillIdx)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
+        <div className="pt-1">
+          <SkillInput
+            onAdd={handleAddSkill}
+            existingSkills={allSkills}
+            profileSkills={profileSkillNames}
+            placeholder="Add a skill..."
+          />
+        </div>
       </div>
     </div>
   );
 }
 
+/**
+ * Renders a draggable skill badge with a visible drag handle and remove action.
+ *
+ * @param id - Unique identifier for the draggable item (used by the drag-and-drop system)
+ * @param skill - The text label displayed on the badge
+ * @param onRemove - Callback invoked when the badge's remove control is activated
+ * @returns The rendered draggable skill badge element
+ */
+function SortableSkillBadge({
+  id,
+  skill,
+  onRemove,
+}: {
+  id: string;
+  skill: string;
+  onRemove: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <SkillBadge
+        skill={skill}
+        onRemove={onRemove}
+        showDragHandle={true}
+        isDragging={isDragging}
+        dragListeners={listeners}
+        dragAttributes={attributes}
+      />
+    </div>
+  );
+}
+
+/**
+ * Render an editable card for a single education entry.
+ *
+ * @param education - The education entry being edited
+ * @param index - Zero-based index of the entry (used for labeling and element ids)
+ * @param onUpdate - Callback invoked with the updated education object when any field changes
+ * @param onRemove - Callback invoked when the entry should be removed
+ * @returns The rendered education editor element
+ */
 function EducationEditor({
   education,
   index,
@@ -601,4 +803,3 @@ function EducationEditor({
     </div>
   );
 }
-
