@@ -21,7 +21,7 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
     variant = "default",
     ...props
   }, ref) => {
-    const percentage = Math.round((value / max) * 100)
+    const percentage = max === 0 ? 0 : Math.round((value / max) * 100)
 
     // Determine color based on percentage for match variant
     const getMatchColor = (pct: number) => {
