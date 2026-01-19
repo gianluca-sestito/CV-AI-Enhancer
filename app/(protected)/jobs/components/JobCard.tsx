@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -14,15 +15,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  Trash2, 
-  Building2, 
-  Calendar, 
+import {
+  Trash2,
+  Building2,
+  Calendar,
   BarChart3,
   CheckCircle2,
   Clock,
   XCircle,
-  FileText
+  FileText,
+  ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logger } from "@/lib/utils/logger";
@@ -104,45 +106,56 @@ export default function JobCard({ job }: JobCardProps) {
 
   return (
     <>
-      <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+      <Card variant="elevated" hover className="group">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
             <div className="flex-1 min-w-0">
-              <div className="flex items-start gap-3 mb-2">
-                <FileText className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+              <div className="flex items-start gap-4 mb-3">
+                <div className="w-12 h-12 rounded-lg bg-gradient-mesh flex items-center justify-center flex-shrink-0">
+                  <FileText className="h-6 w-6 text-white" />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <CardTitle className="text-xl font-semibold mb-1.5">
+                  <CardTitle className="text-2xl mb-2">
                     {job.title}
                   </CardTitle>
                   {job.company && (
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <Building2 className="h-3.5 w-3.5 shrink-0" />
-                      <span>{job.company}</span>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Building2 className="h-4 w-4 shrink-0" />
+                      <span className="text-base">{job.company}</span>
                     </div>
                   )}
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-3 shrink-0 w-full lg:w-auto">
               {latestAnalysis && matchScore !== undefined && (
-                <Badge
-                  variant={getMatchScoreColor(matchScore) as "default" | "secondary" | "destructive" | "outline"}
-                  className="text-lg px-4 py-1.5 font-semibold"
-                >
-                  {matchScore}%
-                </Badge>
+                <div className="flex-1 lg:flex-none">
+                  <div className="text-center">
+                    <div className={cn(
+                      "text-4xl font-display font-bold mb-1",
+                      matchScore >= 70 ? "text-cv-match-high" :
+                      matchScore >= 50 ? "text-cv-match-medium" : "text-cv-match-low"
+                    )}>
+                      {matchScore}%
+                    </div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wider">
+                      Match Score
+                    </div>
+                  </div>
+                </div>
               )}
-              <div className="flex gap-1.5">
-                <Link href={`/jobs/${job.id}`}>
-                  <Button variant="outline" size="sm" className="h-8">
-                    View
+              <div className="flex gap-2">
+                <Link href={`/jobs/${job.id}`} className="flex-1 lg:flex-none">
+                  <Button variant="default" size="sm" className="w-full">
+                    View Details
+                    <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-0.5 transition-transform" />
                   </Button>
                 </Link>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowDeleteDialog(true)}
-                  className="text-destructive hover:text-destructive h-8 w-8"
+                  className="text-muted-foreground hover:text-destructive"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -150,51 +163,52 @@ export default function JobCard({ job }: JobCardProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-0 space-y-3">
-          {/* Featured Match Score Section */}
+        <CardContent className="pt-0 space-y-4">
+          {/* Match Score Progress */}
           {latestAnalysis ? (
-            <div className="bg-muted/30 border border-border/50 rounded-lg p-4 space-y-3">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">Match Score</span>
+                  <span className="text-sm font-medium">Analysis Progress</span>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   {getStatusIcon(latestAnalysis.status)}
-                  {latestAnalysis.status && latestAnalysis.status !== "completed" && (
-                    <span className="text-xs text-muted-foreground">
+                  {latestAnalysis.status && (
+                    <span className="text-xs text-muted-foreground capitalize">
                       {latestAnalysis.status}
                     </span>
                   )}
                 </div>
               </div>
               {matchScore !== undefined && (
-                <div className="space-y-1.5">
-                  <div className="w-full bg-background/50 rounded-full h-3 border border-border/30">
-                    <div
-                      className={cn(
-                        "h-3 rounded-full transition-all",
-                        getMatchScoreBarColor(matchScore)
-                      )}
-                      style={{ width: `${matchScore}%` }}
-                    />
-                  </div>
-                </div>
+                <Progress
+                  value={matchScore}
+                  variant="match"
+                  showPercentage={false}
+                />
               )}
             </div>
           ) : (
-            <div className="bg-muted/30 border border-border/50 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <BarChart3 className="h-4 w-4" />
-                <span>No analysis yet</span>
+            <div className="bg-muted/50 border border-dashed border-border rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <BarChart3 className="h-4 w-4" />
+                  <span>Not analyzed yet</span>
+                </div>
+                <Link href={`/jobs/${job.id}`}>
+                  <Button variant="outline" size="sm">
+                    Analyze Now
+                  </Button>
+                </Link>
               </div>
             </div>
           )}
 
-          {/* Created Date - More Subtle */}
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
-            <Calendar className="h-3 w-3" />
-            <span>Created {formatDate(job.createdAt)}</span>
+          {/* Created Date */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2 border-t border-border/50">
+            <Calendar className="h-3.5 w-3.5" />
+            <span>Added {formatDate(job.createdAt)}</span>
           </div>
         </CardContent>
       </Card>
